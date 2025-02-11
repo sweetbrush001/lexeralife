@@ -1,0 +1,9 @@
+android {
+    // ... other configs
+    
+    defaultConfig {
+        // ... other configs
+        
+        vectorDrawables.useSupportLibrary = true
+    }
+} 
