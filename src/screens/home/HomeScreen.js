@@ -7,142 +7,163 @@ import {
   SafeAreaView,
   Image,
   Platform,
+  ImageBackground, 
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/FontAwesome5';
 
 const HomeScreen = () => {
   const navigation = useNavigation();
-
   const progressValue = 30; // Example progress value
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header with Logo */}
-      <View style={styles.header}>
-        <Image
-          source={require('../../../assets/Logo.png')} // Make sure to add your logo
-          style={styles.logo}
-        />
-        <Text style={styles.logoText}>Lexera Life</Text>
-      </View>
-
-      {/* Motivational Card */}
-      <View style={styles.messageCard}>
-        <View style={styles.messageContent}>
-          <Text style={styles.messageText}>
-            <Text>It is more </Text>
-            <Text style={styles.highlightRed}>common </Text>
-            <Text>than you can </Text>
-            <Text style={styles.highlightBrown}>imagine. </Text>
-            <Text>You are not </Text>
-            <Text style={styles.highlightRed}>alone.</Text>
-          </Text>
+    <ImageBackground
+      source={require('../../../assets/home_back.png')} // Add your background image
+      style={styles.backgroundImage} // Style for full-screen background image
+      resizeMode="cover" // Ensures the image covers the screen
+    >
+      <SafeAreaView style={styles.container}>
+        {/* Header with Logo */}
+        <View style={styles.header}>
+          <Image
+            source={require('../../../assets/Logo.png')} // Make sure to add your logo
+            style={styles.logo}
+          />
+          <Text style={styles.logoText}>Lexera Life</Text>
         </View>
-      </View>
 
-      {/* Progress Bar */}
-      <View style={styles.progressContainer}>
-        <Text style={styles.progressText}>{progressValue}% progress</Text>
-        <View style={styles.progressBar}>
-          <View style={[styles.progressFill, { width: `${progressValue}%` }]} />
-          <View style={styles.progressDots}>
-            <View style={styles.dot} />
-            <View style={styles.dot} />
-            <View style={styles.dot} />
-            <View style={styles.dot} />
+        {/* Motivational Card */}
+        <View style={styles.messageCard}>
+          <View style={styles.messageContent}>
+            <Text style={styles.messageText}>
+              <Text>It is more </Text>
+              <Text style={styles.highlightRed}>common </Text>
+              <Text>than you can </Text>
+              <Text style={styles.highlightBrown}>imagine. </Text>
+              <Text>You are not </Text>
+              <Text style={styles.highlightRed}>alone.</Text>
+            </Text>
+          </View>
+
+          {/* Profile Picture */}
+          <Image
+            source={require('../../../assets/profilepic.png')} // Replace with actual user profile image
+            style={styles.profilePicture}
+          />
+        </View>
+
+        {/* Progress Bar */}
+        <View style={styles.progressContainer}>
+          <Text style={styles.progressText}>{progressValue}% progress</Text>
+          <View style={styles.progressBar}>
+            <View style={[styles.progressFill, { width: `${progressValue}%` }]} />
+            <View style={styles.progressDots}>
+              <View style={styles.dot} />
+              <View style={styles.dot} />
+              <View style={styles.dot} />
+              <View style={styles.dot} />
+            </View>
           </View>
         </View>
-      </View>
 
-      {/* Feature Cards */}
-      <View style={styles.featureContainer}>
-        <TouchableOpacity 
-          style={[styles.featureCard, styles.botCard]}
-          onPress={() => navigation.navigate('Chatbot')}
-        >
-          <Image
-            source={require('../../../assets/g12.png')} // Add your bot image
-            style={styles.botImage}
-          />
-          <Text style={styles.featureTitle}>Lexera Bot</Text>
-        </TouchableOpacity>
-
-        <View style={styles.smallCardsContainer}>
+        {/* Feature Cards */}
+        <View style={styles.featureContainer}>
           <TouchableOpacity 
-            style={[styles.smallCard, styles.trainingCard]}
-            onPress={() => navigation.navigate('Game')}
+            style={[styles.featureCard, styles.botCard]}
+            onPress={() => navigation.navigate('Chatbot')}
           >
-            <View style={styles.iconContainer}>
-              <Icon name="brain" size={24} color="#FF9999" />
-            </View>
-            <Text style={styles.smallCardTitle}>Brain training</Text>
+            <Image
+              source={require('../../../assets/g12.png')} // Add your bot image
+              style={styles.botImage}
+            />
+            <Text style={styles.featureTitle}>Lexera Bot</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity 
-            style={[styles.smallCard, styles.testCard]}
-            onPress={() => navigation.navigate('Test')}
-          >
-            <View style={styles.iconContainer}>
-              <Icon name="clipboard-check" size={24} color="#FF9999" />
-            </View>
-            <Text style={styles.smallCardTitle}>Dyslexia Test</Text>
+          <View style={styles.smallCardsContainer}>
+            <TouchableOpacity 
+              style={[styles.smallCard, styles.trainingCard]}
+              onPress={() => navigation.navigate('Game')}
+            >
+              <View style={styles.iconContainer}>
+                <Icon name="brain" size={24} color="#FF9999" />
+              </View>
+              <Text style={styles.smallCardTitle}>Brain training</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={[styles.smallCard, styles.testCard]}
+              onPress={() => navigation.navigate('Test')}
+            >
+              <View style={styles.iconContainer}>
+                <Icon name="clipboard-check" size={24} color="#FF9999" />
+              </View>
+              <Text style={styles.smallCardTitle}>Dyslexia Test</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Bottom Navigation */}
+        <View style={styles.bottomNav}>
+          <TouchableOpacity style={styles.navItem}>
+            <Icon name="home" size={24} color="#fff" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.navButton}>
+            <Icon name="microphone" size={24} color="#000" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.navItem}>
+            <Icon name="user" size={24} color="#fff" />
           </TouchableOpacity>
         </View>
-      </View>
-
-      {/* Bottom Navigation */}
-      <View style={styles.bottomNav}>
-        <TouchableOpacity style={styles.navItem}>
-          <Icon name="home" size={24} color="#fff" />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navButton}>
-          <Icon name="microphone" size={24} color="#000" />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-          <Icon name="user" size={24} color="#fff" />
-        </TouchableOpacity>
-      </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </ImageBackground>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#A990FF',
+    backgroundColor: 'transparent', // Ensures transparency for the background image
+  },
+  backgroundImage: {
+    flex: 1, // Ensures the background image takes up the entire screen
+    width: '100%',
+    height: '100%',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 20,
+    padding: 10,
     backgroundColor: '#fff',
     borderBottomRightRadius: 30,
     borderBottomLeftRadius: 30,
   },
   logo: {
-    width: 40,
-    height: 40,
-    marginRight: 10,
+    width: 100,
+    height: 50,
+    marginRight: 18,
   },
   logoText: {
-    fontSize: 24,
+    fontSize: 35,
     fontWeight: 'bold',
-    background: 'linear-gradient(45deg, #6B3FA0, #FF6B6B)',
   },
   messageCard: {
-    margin: 20,
+    margin: 10,
     backgroundColor: '#fff',
     borderRadius: 20,
-    padding: 20,
+    padding: 45,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 5,
+    marginTop: 100,
+    position: 'relative', // Add relative positioning to allow profile picture placement
+  },
+  messageContent: {
+    flex: 1,
   },
   messageText: {
-    fontSize: 22,
+    fontSize: 30,
     lineHeight: 32,
   },
   highlightRed: {
@@ -152,7 +173,7 @@ const styles = StyleSheet.create({
     color: '#8B4513',
   },
   progressContainer: {
-    margin: 20,
+    margin: 10,
     backgroundColor: '#fff',
     borderRadius: 15,
     padding: 15,
@@ -190,9 +211,10 @@ const styles = StyleSheet.create({
     borderColor: '#0066FF',
   },
   featureContainer: {
-    padding: 20,
+    padding: 10,
     flexDirection: 'row',
     justifyContent: 'space-between',
+    marginTop: 20,
   },
   featureCard: {
     flex: 1,
@@ -223,7 +245,7 @@ const styles = StyleSheet.create({
   smallCard: {
     backgroundColor: '#fff',
     borderRadius: 20,
-    padding: 15,
+    padding: 20,
     marginBottom: 10,
   },
   iconContainer: {
@@ -243,12 +265,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
-    backgroundColor: '#A990FF',
     paddingVertical: 20,
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
     position: 'absolute',
-    bottom: 0,
+    bottom: -8,
     left: 0,
     right: 0,
   },
@@ -267,6 +288,17 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 5,
+  },
+  profilePicture: {
+    position: 'absolute',
+    right: 1, // Adjust position from the right
+    top: 15, // Adjust position from the top
+    width: 100, // Set the size of the profile picture
+    height: 100, // Set the size of the profile picture
+    borderRadius: 25, // To make it circular
+    borderWidth: 2,
+    borderColor: '#fff', // Optional border color
+    paddingLeft: 20,
   },
 });
 

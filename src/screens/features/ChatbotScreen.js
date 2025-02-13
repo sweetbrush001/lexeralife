@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   SafeAreaView,
+  ImageBackground,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome5';
 
@@ -53,88 +54,91 @@ const ChatbotScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton}>
-          <Icon name="chevron-left" size={20} color="#666" />
-        </TouchableOpacity>
-        <View style={styles.botInfo}>
-          <View style={styles.botIconContainer}>
-            <Icon name="robot" size={20} color="#A990FF" />
-          </View>
-          <Text style={styles.botName}>Lexera Bot</Text>
-        </View>
-        <TouchableOpacity style={styles.menuButton}>
-          <Icon name="ellipsis-v" size={20} color="#666" />
-        </TouchableOpacity>
-      </View>
-
-      {/* Chat Messages */}
-      <ScrollView
-        style={styles.messagesContainer}
-        ref={scrollViewRef}
-        onContentSizeChange={() => scrollViewRef.current.scrollToEnd({ animated: true })}
+      {/* Background Image */}
+      <ImageBackground
+        source={require('../../../assets/background.png')} // Replace with your background image path
+        style={styles.backgroundImage}
       >
-        {messages.map((message) => (
-          <View
-            key={message.id}
-            style={[
-              styles.messageWrapper,
-              message.isBot ? styles.botMessageWrapper : styles.userMessageWrapper,
-            ]}
-          >
-            {message.isBot && (
-              <View style={styles.botAvatar}>
-                <Icon name="robot" size={16} color="#A990FF" />
-              </View>
-            )}
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton}>
+            <Icon name="chevron-left" size={20} color="#666" />
+          </TouchableOpacity>
+          <View style={styles.botInfo}>
+            <View style={styles.botIconContainer}>
+              <Icon name="robot" size={20} color="#A990FF" />
+            </View>
+            <Text style={styles.botName}>Lexera Bot</Text>
+          </View>
+          <TouchableOpacity style={styles.menuButton}>
+            <Icon name="ellipsis-v" size={20} color="#666" />
+          </TouchableOpacity>
+        </View>
+
+        {/* Chat Messages */}
+        <ScrollView
+          style={styles.messagesContainer}
+          ref={scrollViewRef}
+          onContentSizeChange={() => scrollViewRef.current.scrollToEnd({ animated: true })}
+        >
+          {messages.map((message) => (
             <View
+              key={message.id}
               style={[
-                styles.message,
-                message.isBot ? styles.botMessage : styles.userMessage,
+                styles.messageWrapper,
+                message.isBot ? styles.botMessageWrapper : styles.userMessageWrapper,
               ]}
             >
-              <Text style={[
-                styles.messageText,
-                message.isBot ? styles.botMessageText : styles.userMessageText,
-              ]}>
-                {message.text}
-              </Text>
+              {message.isBot && (
+                <View style={styles.botAvatar}>
+                  <Icon name="robot" size={16} color="#A990FF" />
+                </View>
+              )}
+              <View
+                style={[
+                  styles.message,
+                  message.isBot ? styles.botMessage : styles.userMessage,
+                ]}
+              >
+                <Text style={[styles.messageText, message.isBot ? styles.botMessageText : styles.userMessageText]}>
+                  {message.text}
+                </Text>
+              </View>
             </View>
-          </View>
-        ))}
-      </ScrollView>
+          ))}
+        </ScrollView>
 
-      {/* Input Area */}
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.inputContainer}
-      >
-        <View style={styles.inputWrapper}>
-          <TouchableOpacity style={styles.attachButton}>
-            <Icon name="paperclip" size={20} color="#666" />
-          </TouchableOpacity>
-          <TextInput
-            style={styles.input}
-            placeholder="Type your message..."
-            value={inputText}
-            onChangeText={setInputText}
-            multiline
-            maxHeight={100}
-          />
-          <TouchableOpacity 
-            style={[styles.sendButton, inputText.trim() ? styles.sendButtonActive : null]}
-            onPress={handleSend}
-            disabled={!inputText.trim()}
-          >
-            <Icon 
-              name="paper-plane" 
-              size={20} 
-              color={inputText.trim() ? "#fff" : "#999"} 
+        {/* Input Area */}
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.inputContainer}
+        >
+          <View style={styles.inputWrapper}>
+            <TouchableOpacity style={styles.attachButton}>
+              <Icon name="paperclip" size={20} color="#666" />
+            </TouchableOpacity>
+            <TextInput
+              style={styles.input}
+              placeholder="Type your message..."
+              value={inputText}
+              onChangeText={setInputText}
+              multiline
+              maxHeight={100}
             />
-          </TouchableOpacity>
-        </View>
-      </KeyboardAvoidingView>
+            <TouchableOpacity
+              style={[styles.sendButton, inputText.trim() ? styles.sendButtonActive : null]}
+              onPress={handleSend}
+              disabled={!inputText.trim()}
+            >
+              <Icon
+                name="paper-plane"
+                size={20}
+                color={inputText.trim() ? "#fff" : "#999"}
+              />
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      </ImageBackground>
     </SafeAreaView>
   );
 };
@@ -142,14 +146,17 @@ const ChatbotScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+  },
+  backgroundImage: {
+    flex: 1,
+    justifyContent: 'flex-start',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 15,
-    backgroundColor: '#fff',
+    backgroundColor: 'rgba(255, 255, 255, 0.7)', // Semi-transparent white background for the header
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
   },

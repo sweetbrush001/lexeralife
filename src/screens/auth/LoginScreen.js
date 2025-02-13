@@ -1,150 +1,279 @@
-import React, { useState, useEffect } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, ImageBackground } from "react-native";
-import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithCredential } from "firebase/auth";
-import { auth } from "../../config/firebaseConfig";
-import * as Google from "expo-auth-session/providers/google";
-import * as WebBrowser from "expo-web-browser";
-import { AntDesign } from "@expo/vector-icons";
-import { Button } from "react-native-paper";
+import React, { useState, useCallback } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Image,
+  SafeAreaView,
+  KeyboardAvoidingView,
+  Platform,
+  Dimensions,
+  Alert,
+} from 'react-native';
+import { StatusBar } from 'expo-status-bar';
+import { LinearGradient } from 'expo-linear-gradient';
+import { MaterialIcons, AntDesign } from '@expo/vector-icons';
 
-WebBrowser.maybeCompleteAuthSession();
+const { width } = Dimensions.get('window');
 
 const LoginScreen = ({ navigation }) => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Google Sign-In
-  const [request, response, promptAsync] = Google.useAuthRequest({
-    androidClientId: "YOUR_GOOGLE_CLIENT_ID",
-    iosClientId: "YOUR_GOOGLE_CLIENT_ID",
-    webClientId: "YOUR_GOOGLE_CLIENT_ID",
-  });
-
-  useEffect(() => {
-    const handleGoogleLogin = async () => {
-      if (response?.type === "success") {
-        setLoading(true);
-        const { id_token } = response.params;
-        const credential = GoogleAuthProvider.credential(id_token);
-        try {
-          await signInWithCredential(auth, credential);
-          navigation.replace("Home");
-        } catch (error) {
-          Alert.alert("Google Sign-In Failed", error.message);
-        } finally {
-          setLoading(false);
-        }
-      }
-    };
-    handleGoogleLogin();
-  }, [response]);
-
-  const handleLogin = async () => {
-    if (!email || !password) {
-      Alert.alert("Error", "Please enter email and password");
+  const handleLogin = useCallback(async () => {
+    if (!username || !password) {
+      Alert.alert('Error', 'Please enter username and password');
       return;
     }
-    setLoading(true);
+    
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      navigation.replace("Home");
+      setLoading(true);
+      navigation.replace('Home');
     } catch (error) {
-      Alert.alert("Login Failed", error.message);
+      Alert.alert('Error', error.message);
     } finally {
       setLoading(false);
     }
-  };
+  }, [username, password, navigation]);
+
+  const handleGoogleSignIn = useCallback(async () => {
+    try {
+      setLoading(true);
+      navigation.replace('Home');
+    } catch (error) {
+      Alert.alert('Error', 'Failed to sign in with Google');
+    } finally {
+      setLoading(false);
+    }
+  }, [navigation]);
 
   return (
-    <ImageBackground source={require('../../../assets/login_back.png')} style={styles.background}>
-      <View style={styles.container}>
-        <Text style={styles.title}>Welcome Back</Text>
+    <SafeAreaView style={styles.container}>
+      <StatusBar style="dark" />
+      
+      {/* Background Gradient */}
+      <LinearGradient colors={['#89A69A', '#D2C599']} style={styles.gradient}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.content}>
+          <View style={styles.form}>
+            
+            {/* Header Image */}
+            <View style={styles.headerImageContainer}>
+              <Image source={require('../../../assets/login_back.png')} style={styles.headerImage} resizeMode="contain" />
+            </View>
 
-        <TextInput style={styles.input} placeholder="Email" value={email} onChangeText={setEmail} keyboardType="email-address" />
-        <TextInput style={styles.input} placeholder="Password" value={password} onChangeText={setPassword} secureTextEntry />
+            {/* Login Text */}
+            <Text style={styles.loginText}>LOGIN</Text>
 
-        {loading ? (
-          <ActivityIndicator size="large" color="#007BFF" />
-        ) : (
-          <>
-            <Button mode="contained" style={styles.loginButton} onPress={handleLogin}>
-              Login
-            </Button>
+            {/* Username Input */}
+            <View style={styles.inputContainer}>
+              <MaterialIcons name="person-outline" size={24} color="#666" style={styles.icon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Username"
+                value={username}
+                onChangeText={setUsername}
+                placeholderTextColor="#666"
+                autoCapitalize="none"
+              />
+            </View>
 
-            <TouchableOpacity style={styles.googleButton} onPress={() => promptAsync()}>
-              <AntDesign name="google" size={24} color="white" />
-              <Text style={styles.googleText}>Sign in with Google</Text>
+            {/* Password Input */}
+            <View style={styles.inputContainer}>
+              <MaterialIcons name="lock-outline" size={24} color="#666" style={styles.icon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Password"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+                placeholderTextColor="#666"
+              />
+            </View>
+
+            {/* Login Button */}
+            <TouchableOpacity 
+              style={[styles.loginButton, loading && styles.loginButtonDisabled]}
+              onPress={handleLogin}
+              disabled={loading}
+            >
+              <Text style={styles.loginButtonText}>
+                {loading ? 'Loading...' : 'Login Now'}
+              </Text>
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={() => navigation.navigate("Signup")}>
-              <Text style={styles.signupText}>Don't have an account? Sign up</Text>
-            </TouchableOpacity>
-          </>
-        )}
-      </View>
-    </ImageBackground>
+            {/* Login with Others */}
+            <Text style={styles.loginWithText}>
+              <Text style={styles.loginPart}>Login</Text>
+              <Text style={styles.withOthersPart}> with Others</Text>
+            </Text>
+
+            {/* Social Login (Only Google) */}
+            <View style={styles.socialContainer}>
+              <TouchableOpacity 
+                style={styles.socialButton}
+                onPress={handleGoogleSignIn}
+                disabled={loading}
+              >
+                <AntDesign name="google" size={24} color="#DB4437" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Create Account */}
+            <View style={styles.createAccountContainer}>
+              <Text style={styles.noAccountText}>Don't have an Account?</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
+                <Text style={styles.createAccountText}>Create Account</Text>
+              </TouchableOpacity>
+            </View>
+
+          </View>
+        </KeyboardAvoidingView>
+      </LinearGradient>
+      
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  background: {
-    flex: 1,
-    resizeMode: "cover",
-    justifyContent: "center",
-  },
   container: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
+  },
+  gradient: {
+    flex: 1,
+    backgroundColor: 'rgba(255,255,255,0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+  },
+  content: {
+    width: '100%',
+    alignItems: 'center',
     paddingHorizontal: 20,
-    backgroundColor: "rgba(255, 255, 255, 0.8)", // Semi-transparent background
   },
-  title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    marginBottom: 20,
-    color: "#333",
+  form: {
+    width: '100%',
+    alignItems: 'center',
   },
-  input: {
-    width: "100%",
-    padding: 15,
-    backgroundColor: "#fff",
-    borderRadius: 10,
+  headerImageContainer: {
+    alignItems: 'center',
     marginBottom: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
+  },
+  headerImage: {
+    width: 650, // Adjust width as needed
+    height: 250, // Adjust height as needed
+    marginTop: -60,
+  },
+  loginText: {
+    fontSize: 100,
+    fontWeight: 'bold',
+    color: '#6200EE',
+    marginTop: 20,
+    marginBottom: 40,
+  },
+  inputContainer: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'white',
+    borderRadius: 25,
+    marginBottom: 15,
+    paddingHorizontal: 15,
+    borderWidth: 1,
+    borderColor: '#6200EE',
+    height: 50,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
     shadowOpacity: 0.1,
-    shadowRadius: 5,
+    shadowRadius: 3,
     elevation: 3,
   },
-  loginButton: {
-    width: "100%",
-    backgroundColor: "#007BFF",
-    padding: 15,
-    borderRadius: 10,
-    marginTop: 10,
+  icon: {
+    marginRight: 10,
   },
-  googleButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#DB4437",
-    padding: 15,
-    borderRadius: 10,
-    width: "100%",
-    justifyContent: "center",
-    marginTop: 10,
-  },
-  googleText: {
-    color: "white",
-    fontSize: 18,
-    fontWeight: "bold",
-    marginLeft: 10,
-  },
-  signupText: {
-    marginTop: 20,
+  input: {
+    flex: 1,
+    height: 50,
+    color: '#333',
     fontSize: 16,
-    color: "#007BFF",
+  },
+  loginButton: {
+    width: width * 0.4,
+    height: 50,
+    backgroundColor: '#6200EE',
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 20,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  loginButtonText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  loginWithText: {
+    marginTop: 30,
+    fontSize: 18,
+    marginBottom: 20,
+  },
+  loginPart: {
+    color: '#6200EE',
+    fontWeight: 'bold',
+  },
+  withOthersPart: {
+    color: '#666',
+  },
+  socialContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 10,
+  },
+  socialButton: {
+    width: 45,
+    height: 45,
+    borderRadius: 22.5,
+    backgroundColor: 'white',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: 10,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 3,
+  },
+  createAccountContainer: {
+    marginTop: 30,
+    alignItems: 'center',
+  },
+  noAccountText: {
+    fontSize: 16,
+    color: '#333',
+    marginBottom: 5,
+  },
+  createAccountText: {
+    fontSize: 16,
+    color: '#6200EE',
+    fontWeight: 'bold',
+  },
+  loginButtonDisabled: {
+    opacity: 0.7,
   },
 });
 
