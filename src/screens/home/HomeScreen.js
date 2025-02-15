@@ -150,7 +150,7 @@ const styles = StyleSheet.create({
     margin: 10,
     backgroundColor: '#fff',
     borderRadius: 20,
-    padding: 45,
+    padding: 100,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -177,6 +177,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 15,
     padding: 15,
+    marginTop: 10,
   },
   progressText: {
     color: '#0066FF',
@@ -214,7 +215,7 @@ const styles = StyleSheet.create({
     padding: 10,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 20,
+    marginTop: 30,
   },
   featureCard: {
     flex: 1,
@@ -293,12 +294,11 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 1, // Adjust position from the right
     top: 15, // Adjust position from the top
-    width: 100, // Set the size of the profile picture
-    height: 100, // Set the size of the profile picture
+    width: 160, // Set the size of the profile picture
+    height: 150, // Set the size of the profile picture
     borderRadius: 25, // To make it circular
     borderWidth: 2,
     borderColor: '#fff', // Optional border color
-    paddingLeft: 20,
   },
 });
 
