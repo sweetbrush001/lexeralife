@@ -6,4 +6,8 @@ android {
         
         vectorDrawables.useSupportLibrary = true
     }
-} 
+}
+
+project.ext.react = [
+    enableHermes: true
+]

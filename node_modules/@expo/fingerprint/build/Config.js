@@ -43,7 +43,6 @@ async function loadConfigAsync(projectRoot, silent = false) {
         'enableReactImportsPatcher',
         'useRNCoreAutolinkingFromExpo',
         'debug',
-        'fileHookTransform',
     ];
     const config = {};
     for (const key of supportedConfigKeys) {

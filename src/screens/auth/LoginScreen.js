@@ -15,6 +15,11 @@ import {
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons, AntDesign } from '@expo/vector-icons';
+import { auth } from '../../config/firebaseConfig'; // Import the auth instance
+import { signInWithEmailAndPassword } from 'firebase/auth'; // Import signIn function
+import AsyncStorage from '@react-native-async-storage/async-storage'; // Import AsyncStorage for persistence
+import { initializeAuth, getReactNativePersistence } from 'firebase/auth';
+import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage';        
 
 const { width } = Dimensions.get('window');
 
@@ -31,6 +36,10 @@ const LoginScreen = ({ navigation }) => {
     
     try {
       setLoading(true);
+      
+      // Sign in with email and password using Firebase Auth
+      await signInWithEmailAndPassword(auth, username, password);
+
       navigation.replace('Home');
     } catch (error) {
       Alert.alert('Error', error.message);

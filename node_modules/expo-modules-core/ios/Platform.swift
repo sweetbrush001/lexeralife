@@ -10,6 +10,5 @@ public typealias UIResponder = NSResponder
 public typealias UIApplicationDelegate = NSApplicationDelegate
 public typealias UIWindow = NSWindow
 public typealias UIHostingController = NSHostingController
-public typealias UIViewRepresentable = NSViewRepresentable
 
 #endif // os(macOS)

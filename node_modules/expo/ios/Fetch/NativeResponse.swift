@@ -36,9 +36,9 @@ internal final class NativeResponse: SharedObject, ExpoURLSessionTaskDelegate {
     self.dispatchQueue = dispatchQueue
   }
 
-  func startStreaming() -> Data? {
+  func startStreaming() {
     if isInvalidState(.responseReceived, .bodyCompleted) {
-      return nil
+      return
     }
     if state == .responseReceived {
       state = .bodyStreamingStarted
@@ -46,9 +46,9 @@ internal final class NativeResponse: SharedObject, ExpoURLSessionTaskDelegate {
       emit(event: "didReceiveResponseData", arguments: queuedData)
     } else if state == .bodyCompleted {
       let queuedData = self.sink.finalize()
-      return queuedData
+      emit(event: "didReceiveResponseData", arguments: queuedData)
+      emit(event: "didComplete")
     }
-    return nil
   }
 
   func cancelStreaming() {
@@ -59,13 +59,8 @@ internal final class NativeResponse: SharedObject, ExpoURLSessionTaskDelegate {
   }
 
   func emitRequestCanceled() {
-    let error = FetchRequestCanceledException()
-    self.error = error
-    if state == .bodyStreamingStarted {
-      emit(event: "didFailWithError", arguments: error.localizedDescription)
-    }
+    error = FetchRequestCanceledException()
     state = .errorReceived
-    emit(event: "readyForJSFinalization")
   }
 
   /**
@@ -202,7 +197,5 @@ internal final class NativeResponse: SharedObject, ExpoURLSessionTaskDelegate {
     } else {
       state = .bodyCompleted
     }
-
-    emit(event: "readyForJSFinalization")
   }
 }

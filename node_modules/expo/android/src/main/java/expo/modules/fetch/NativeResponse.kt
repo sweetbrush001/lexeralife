@@ -49,9 +49,9 @@ internal class NativeResponse(appContext: AppContext, private val coroutineScope
     state = ResponseState.STARTED
   }
 
-  fun startStreaming(): ByteArray? {
+  fun startStreaming() {
     if (isInvalidState(ResponseState.RESPONSE_RECEIVED, ResponseState.BODY_COMPLETED)) {
-      return null
+      return
     }
     if (state == ResponseState.RESPONSE_RECEIVED) {
       state = ResponseState.BODY_STREAMING_STARTED
@@ -59,9 +59,9 @@ internal class NativeResponse(appContext: AppContext, private val coroutineScope
       emit("didReceiveResponseData", queuedData)
     } else if (state == ResponseState.BODY_COMPLETED) {
       val queuedData = this.sink.finalize()
-      return queuedData
+      emit("didReceiveResponseData", queuedData)
+      emit("didComplete")
     }
-    return null
   }
 
   fun cancelStreaming() {
@@ -72,13 +72,8 @@ internal class NativeResponse(appContext: AppContext, private val coroutineScope
   }
 
   fun emitRequestCancelled() {
-    val error = FetchRequestCancelledException()
-    this.error = error
-    if (state == ResponseState.BODY_STREAMING_STARTED) {
-      emit("didFailWithError", error)
-    }
+    error = FetchRequestCancelledException()
     state = ResponseState.ERROR_RECEIVED
-    emit("readyForJSFinalization")
   }
 
   fun waitForStates(states: List<ResponseState>, callback: (ResponseState) -> Unit) {
@@ -113,7 +108,6 @@ internal class NativeResponse(appContext: AppContext, private val coroutineScope
     }
     error = e
     state = ResponseState.ERROR_RECEIVED
-    emit("readyForJSFinalization")
   }
 
   override fun onResponse(call: Call, response: Response) {
@@ -129,7 +123,6 @@ internal class NativeResponse(appContext: AppContext, private val coroutineScope
         emit("didComplete")
       }
       this@NativeResponse.state = ResponseState.BODY_COMPLETED
-      emit("readyForJSFinalization")
     }
   }
 
@@ -165,30 +158,22 @@ internal class NativeResponse(appContext: AppContext, private val coroutineScope
   }
 
   private fun pumpResponseBodyStream(stream: BufferedSource) {
-    try {
-      while (!stream.exhausted()) {
-        if (isInvalidState(
-            ResponseState.RESPONSE_RECEIVED,
-            ResponseState.BODY_STREAMING_STARTED,
-            ResponseState.BODY_STREAMING_CANCELLED
-          )
-        ) {
-          break
-        }
-        if (state == ResponseState.RESPONSE_RECEIVED) {
-          sink.appendBufferBody(stream.buffer.readByteArray())
-        } else if (state == ResponseState.BODY_STREAMING_STARTED) {
-          emit("didReceiveResponseData", stream.buffer.readByteArray())
-        } else {
-          break
-        }
+    while (!stream.exhausted()) {
+      if (isInvalidState(
+          ResponseState.RESPONSE_RECEIVED,
+          ResponseState.BODY_STREAMING_STARTED,
+          ResponseState.BODY_STREAMING_CANCELLED
+        )
+      ) {
+        break
       }
-    } catch (e: IOException) {
-      this.error = e
-      if (state == ResponseState.BODY_STREAMING_STARTED) {
-        emit("didFailWithError", e)
+      if (state == ResponseState.RESPONSE_RECEIVED) {
+        sink.appendBufferBody(stream.buffer.readByteArray())
+      } else if (state == ResponseState.BODY_STREAMING_STARTED) {
+        emit("didReceiveResponseData", stream.buffer.readByteArray())
+      } else {
+        break
       }
-      state = ResponseState.ERROR_RECEIVED
     }
   }
 
