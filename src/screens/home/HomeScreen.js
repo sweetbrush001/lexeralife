@@ -92,7 +92,7 @@ const HomeScreen = () => {
 
             <TouchableOpacity 
               style={[styles.smallCard, styles.testCard]}
-              onPress={() => navigation.navigate('Test')}
+              onPress={() => navigation.navigate('TestIntro')}
             >
               <View style={styles.iconContainer}>
                 <Icon name="clipboard-check" size={24} color="#FF9999" />

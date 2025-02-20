@@ -6,8 +6,10 @@ import HomeScreen from "../screens/home/HomeScreen";
 import GameScreen from "../screens/features/GameScreen";
 import ChatbotScreen from "../screens/features/ChatbotScreen";
 import CreativityScreen from "../screens/features/CreativityScreen";
-import TestScreen from "../screens/features/TestScreen";
-import ResultsScreen from "../screens/features/ResultsScreen"; // Correct import path
+import TestScreen from "../screens/features/testScreen/TestScreen";
+import ResultsScreen from "../screens/features/testScreen/ResultsScreen"; // Correct import path
+import PreviousResultsScreen from "../screens/features/testScreen/PreviousResultsScreen";
+import TestIntroScreen from "../screens/features/testScreen/TestIntroScreen"
 
 const Stack = createNativeStackNavigator();
 
@@ -22,6 +24,9 @@ const AppNavigator = () => {
       <Stack.Screen name="Creativity" component={CreativityScreen} />
       <Stack.Screen name="Test" component={TestScreen} />
       <Stack.Screen name="Results" component={ResultsScreen} />
+      <Stack.Screen name="PreviousResults" component={PreviousResultsScreen} />
+      <Stack.Screen name="TestIntro" component={TestIntroScreen} />
+
     </Stack.Navigator>
   );
 };

@@ -12,7 +12,7 @@ import {
   ImageBackground,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import { db } from "../../config/firebaseConfig";
+import { db } from "../../../config/firebaseConfig";
 import { collection, getDocs } from "firebase/firestore";
 import { MaterialIcons } from "@expo/vector-icons";
 
@@ -96,7 +96,7 @@ const DyslexiaTestScreen = () => {
   if (loading) {
     return (
       <ImageBackground
-        source={require("../../../assets/background.png")}
+        source={require("../../../../assets/background.png")}
         style={styles.background}
         resizeMode="cover"
       >
@@ -111,7 +111,7 @@ const DyslexiaTestScreen = () => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <ImageBackground
-        source={require("../../../assets/background.png")}
+        source={require("../../../../assets/background.png")}
         style={styles.background}
         resizeMode="cover"
       >
