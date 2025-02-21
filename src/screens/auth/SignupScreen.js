@@ -7,14 +7,17 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
+  SafeAreaView,
 } from 'react-native';
 import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
+import { useTextStyle } from '../../hooks/useTextStyle';
 
 const SignupScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
+  const textStyle = useTextStyle();
 
   const handleSignup = async () => {
     if (password !== confirmPassword) {
@@ -32,51 +35,43 @@ const SignupScreen = ({ navigation }) => {
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
-    >
-      <View style={styles.innerContainer}>
-        <Text style={styles.title}>Create Account</Text>
-        
-        <TextInput
-          style={styles.input}
-          placeholder="Email"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-        />
-        
-        <TextInput
-          style={styles.input}
-          placeholder="Password"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-        />
-        
-        <TextInput
-          style={styles.input}
-          placeholder="Confirm Password"
-          value={confirmPassword}
-          onChangeText={setConfirmPassword}
-          secureTextEntry
-        />
-        
-        {error ? <Text style={styles.errorText}>{error}</Text> : null}
-        
-        <TouchableOpacity style={styles.button} onPress={handleSignup}>
-          <Text style={styles.buttonText}>Sign Up</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-          <Text style={styles.linkText}>
-            Already have an account? Login here
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </KeyboardAvoidingView>
+    <SafeAreaView style={styles.container}>
+      <Text style={[styles.signupText, textStyle]}>Create Account</Text>
+      <TextInput
+        style={[styles.input, textStyle]}
+        placeholder="Email"
+        value={email}
+        onChangeText={setEmail}
+        keyboardType="email-address"
+        autoCapitalize="none"
+      />
+      
+      <TextInput
+        style={[styles.input, textStyle]}
+        placeholder="Password"
+        value={password}
+        onChangeText={setPassword}
+        secureTextEntry
+      />
+      
+      <TextInput
+        style={[styles.input, textStyle]}
+        placeholder="Confirm Password"
+        value={confirmPassword}
+        onChangeText={setConfirmPassword}
+        secureTextEntry
+      />
+      
+      {error ? <Text style={[styles.errorText, textStyle]}>{error}</Text> : null}
+      
+      <TouchableOpacity style={[styles.button, textStyle]} onPress={handleSignup}>
+        <Text style={[styles.buttonText, textStyle]}>Sign Up</Text>
+      </TouchableOpacity>
+      
+      <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+        <Text style={[styles.haveAccountText, textStyle]}>Already have an account?</Text>
+      </TouchableOpacity>
+    </SafeAreaView>
   );
 };
 
@@ -85,12 +80,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#ffffff',
   },
-  innerContainer: {
-    flex: 1,
-    padding: 20,
-    justifyContent: 'center',
-  },
-  title: {
+  signupText: {
     fontSize: 28,
     fontWeight: 'bold',
     textAlign: 'center',
@@ -116,7 +106,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
-  linkText: {
+  haveAccountText: {
     color: '#007AFF',
     textAlign: 'center',
     marginTop: 20,

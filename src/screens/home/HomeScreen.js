@@ -11,43 +11,53 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/FontAwesome5';
+import { useTextStyle } from '../../hooks/useTextStyle';
 
 const HomeScreen = () => {
   const navigation = useNavigation();
   const progressValue = 30; // Example progress value
+  const textStyle = useTextStyle();
 
   return (
     <ImageBackground
-      source={require('../../../assets/home_back.png')} // Add your background image
-      style={styles.backgroundImage} // Style for full-screen background image
-      resizeMode="cover" // Ensures the image covers the screen
+      source={require('../../../assets/home_back.png')}
+      style={styles.backgroundImage}
+      resizeMode="cover"
     >
       <SafeAreaView style={styles.container}>
         {/* Header with Logo */}
         <View style={styles.header}>
-          <Image
-            source={require('../../../assets/Logo.png')} // Make sure to add your logo
-            style={styles.logo}
-          />
-          <Text style={styles.logoText}>Lexera Life</Text>
+          <View style={styles.headerMain}>
+            <Image
+              source={require('../../../assets/Logo.png')}
+              style={styles.logo}
+            />
+            <Text style={styles.logoText}>Lexera Life</Text>
+          </View>
+          <TouchableOpacity 
+            style={styles.settingsButton}
+            onPress={() => navigation.navigate('settings')}
+          >
+            <Icon name="cog" size={24} color="#666" />
+          </TouchableOpacity>
         </View>
 
         {/* Motivational Card */}
         <View style={styles.messageCard}>
           <View style={styles.messageContent}>
-            <Text style={styles.messageText}>
-              <Text>It is more </Text>
-              <Text style={styles.highlightRed}>common </Text>
-              <Text>than you can </Text>
-              <Text style={styles.highlightBrown}>imagine. </Text>
-              <Text>You are not </Text>
-              <Text style={styles.highlightRed}>alone.</Text>
+            <Text style={[styles.messageText, textStyle]}>
+              <Text style={[styles.messageTextPart, textStyle]}>It is more </Text>
+              <Text style={[styles.highlightRed, textStyle]}>common </Text>
+              <Text style={[styles.messageTextPart, textStyle]}>than you can </Text>
+              <Text style={[styles.highlightBrown, textStyle]}>imagine. </Text>
+              <Text style={[styles.messageTextPart, textStyle]}>You are not </Text>
+              <Text style={[styles.highlightRed, textStyle]}>alone.</Text>
             </Text>
           </View>
 
           {/* Profile Picture */}
           <Image
-            source={require('../../../assets/profilepic.png')} // Replace with actual user profile image
+            source={require('../../../assets/profilepic.png')}
             style={styles.profilePicture}
           />
         </View>
@@ -73,7 +83,7 @@ const HomeScreen = () => {
             onPress={() => navigation.navigate('Chatbot')}
           >
             <Image
-              source={require('../../../assets/g12.png')} // Add your bot image
+              source={require('../../../assets/g12.png')}
               style={styles.botImage}
             />
             <Text style={styles.featureTitle}>Lexera Bot</Text>
@@ -82,7 +92,7 @@ const HomeScreen = () => {
           <View style={styles.smallCardsContainer}>
             <TouchableOpacity 
               style={[styles.smallCard, styles.trainingCard]}
-              onPress={() => navigation.navigate('Game')}
+              onPress={() => navigation.navigate('settings')}
             >
               <View style={styles.iconContainer}>
                 <Icon name="brain" size={24} color="#FF9999" />
@@ -122,20 +132,25 @@ const HomeScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'transparent', // Ensures transparency for the background image
+    backgroundColor: 'transparent',
   },
   backgroundImage: {
-    flex: 1, // Ensures the background image takes up the entire screen
+    flex: 1,
     width: '100%',
     height: '100%',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     padding: 10,
     backgroundColor: '#fff',
     borderBottomRightRadius: 30,
     borderBottomLeftRadius: 30,
+  },
+  headerMain: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   logo: {
     width: 100,
@@ -146,31 +161,43 @@ const styles = StyleSheet.create({
     fontSize: 35,
     fontWeight: 'bold',
   },
+  settingsButton: {
+    padding: 10,
+  },
   messageCard: {
     margin: 10,
-    backgroundColor: '#fff',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderRadius: 20,
-    padding: 100,
+    padding: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 5,
-    marginTop: 100,
-    position: 'relative', // Add relative positioning to allow profile picture placement
+    marginTop: 20,
+    position: 'relative',
+    minHeight: 150,
   },
   messageContent: {
     flex: 1,
+    justifyContent: 'center',
+    paddingRight: 120,
   },
   messageText: {
-    fontSize: 30,
+    fontSize: 24,
     lineHeight: 32,
+    color: '#333',
+  },
+  messageTextPart: {
+    color: '#333',
   },
   highlightRed: {
     color: '#FF4444',
+    fontWeight: 'bold',
   },
   highlightBrown: {
     color: '#8B4513',
+    fontWeight: 'bold',
   },
   progressContainer: {
     margin: 10,
@@ -292,13 +319,13 @@ const styles = StyleSheet.create({
   },
   profilePicture: {
     position: 'absolute',
-    right: 1, // Adjust position from the right
-    top: 15, // Adjust position from the top
-    width: 160, // Set the size of the profile picture
-    height: 150, // Set the size of the profile picture
-    borderRadius: 25, // To make it circular
+    right: 20,
+    top: 20,
+    width: 100,
+    height: 100,
+    borderRadius: 15,
     borderWidth: 2,
-    borderColor: '#fff', // Optional border color
+    borderColor: '#fff',
   },
 });
 

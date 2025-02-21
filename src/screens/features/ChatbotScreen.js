@@ -14,6 +14,7 @@ import {
 import Icon from 'react-native-vector-icons/FontAwesome5';
 import axios from 'axios';
 import Markdown from 'react-native-markdown-display'; // Import the markdown display component
+import { useTextStyle } from '../../hooks/useTextStyle';
 
 const API_KEY = 'AIzaSyCc7aA7224XYMOJH2f599dM-4CT2kFqSEQ';
 const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${API_KEY}`;
@@ -24,6 +25,7 @@ const ChatbotScreen = () => {
   ]);
   const [inputText, setInputText] = useState('');
   const scrollViewRef = useRef();
+  const textStyle = useTextStyle();
 
   const handleSend = async () => {
     if (!inputText.trim()) return;
@@ -89,7 +91,7 @@ const ChatbotScreen = () => {
               <Icon name="paperclip" size={22} color="#666" />
             </TouchableOpacity>
             <TextInput
-              style={styles.input}
+              style={[styles.input, textStyle]}
               placeholder="Type your message..."
               value={inputText}
               onChangeText={setInputText}

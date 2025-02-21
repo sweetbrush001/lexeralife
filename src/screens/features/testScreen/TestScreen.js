@@ -15,6 +15,7 @@ import { useNavigation } from "@react-navigation/native";
 import { db } from "../../../config/firebaseConfig";
 import { collection, getDocs } from "firebase/firestore";
 import { MaterialIcons } from "@expo/vector-icons";
+import { useTextStyle } from '../../../hooks/useTextStyle';
 
 const { width, height } = Dimensions.get("window");
 
@@ -27,6 +28,7 @@ const DyslexiaTestScreen = () => {
   const navigation = useNavigation();
   const questionAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(1)).current;
+  const textStyle = useTextStyle();
 
   useEffect(() => {
     const fetchQuestions = async () => {
@@ -131,7 +133,7 @@ const DyslexiaTestScreen = () => {
         </View>
 
         <View style={styles.contentContainer}>
-          <Text style={styles.header}>Dyslexia Screening</Text>
+          <Text style={[styles.header, textStyle]}>Dyslexia Screening</Text>
 
           <Animated.View
             style={[
@@ -150,8 +152,8 @@ const DyslexiaTestScreen = () => {
               },
             ]}
           >
-            <Text style={styles.categoryText}>{categories[categoryIndex].category}</Text>
-            <Text style={styles.questionText}>
+            <Text style={[styles.categoryText, textStyle]}>{categories[categoryIndex].category}</Text>
+            <Text style={[styles.questionText, textStyle]}>
               {categories[categoryIndex].questions[questionIndex]}
             </Text>
           </Animated.View>
@@ -159,12 +161,12 @@ const DyslexiaTestScreen = () => {
           <View style={styles.buttonContainer}>
             <TouchableOpacity style={[styles.button, styles.yesButton]} onPress={() => handleAnswer(true)}>
               <MaterialIcons name="check" size={24} color="white" />
-              <Text style={styles.buttonText}>Yes</Text>
+              <Text style={[styles.buttonText, textStyle]}>Yes</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={[styles.button, styles.noButton]} onPress={() => handleAnswer(false)}>
               <MaterialIcons name="close" size={24} color="white" />
-              <Text style={styles.buttonText}>No</Text>
+              <Text style={[styles.buttonText, textStyle]}>No</Text>
             </TouchableOpacity>
           </View>
         </View>

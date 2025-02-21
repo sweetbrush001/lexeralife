@@ -4,12 +4,14 @@ import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { auth, db } from "../../../config/firebaseConfig"; // Import Firebase config
 import { collection, addDoc } from "firebase/firestore";
+import { useTextStyle } from '../../../hooks/useTextStyle';
 
 const ResultsScreen = ({ route }) => {
   const { answers } = route.params;
   const navigation = useNavigation();
   const user = auth.currentUser; // Get the logged-in user
   const [isSaving, setIsSaving] = useState(true);
+  const textStyle = useTextStyle();
 
   const getResult = () => {
     const yesAnswers = answers.filter((answer) => answer === true).length;
@@ -63,13 +65,13 @@ const ResultsScreen = ({ route }) => {
   return (
     <View style={styles.container}>
       <View style={styles.card}>
-        <Text style={styles.title}>Results</Text>
+        <Text style={[styles.title, textStyle]}>Results</Text>
 
         <View style={[styles.percentageCircle, { borderColor: percentageColor }]}>
-          <Text style={[styles.percentageText, { color: percentageColor }]}>{percentage}%</Text>
+          <Text style={[styles.percentageText, { color: percentageColor }, textStyle]}>{percentage}%</Text>
         </View>
 
-        <Text style={styles.resultText}>{resultText}</Text>
+        <Text style={[styles.resultText, textStyle]}>{resultText}</Text>
 
         {isSaving ? (
           <ActivityIndicator size="large" color="#007BFF" />
@@ -77,12 +79,12 @@ const ResultsScreen = ({ route }) => {
           <>
             <TouchableOpacity style={styles.button} onPress={() => navigation.navigate("PreviousResults")}>
               <Ionicons name="time-outline" size={24} color="#fff" />
-              <Text style={styles.buttonText}>View Previous Results</Text>
+              <Text style={[styles.buttonText, textStyle]}>View Previous Results</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.button} onPress={() => navigation.navigate("Home")}>
               <Ionicons name="arrow-back" size={24} color="#fff" />
-              <Text style={styles.buttonText}>Go Back</Text>
+              <Text style={[styles.buttonText, textStyle]}>Go Back</Text>
             </TouchableOpacity>
           </>
         )}

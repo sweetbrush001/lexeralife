@@ -12,6 +12,7 @@
   "dependencies": {
     "@expo/vector-icons": "^14.0.2",
     "@react-native-async-storage/async-storage": "^1.24.0",
+    "@react-native-community/slider": "^4.5.5",
     "@react-native-firebase/app": "^21.10.1",
     "@react-native-firebase/firestore": "^21.10.1",
     "@react-native-voice/voice": "^3.2.4",
@@ -22,6 +23,7 @@
     "expo": "52.0.0",
     "expo-auth-session": "~6.0.3",
     "expo-av": "~15.0.2",
+    "expo-font": "~13.0.4",
     "expo-linear-gradient": "~14.0.2",
     "expo-random": "^14.0.1",
     "expo-speech": "~13.0.1",

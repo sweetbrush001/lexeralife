@@ -10,12 +10,14 @@ import {
   Dimensions,
   Animated,
   Platform,
+  ScrollView,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { auth, db } from "../../../config/firebaseConfig";
 import { collection, query, where, getDocs, deleteDoc, doc } from "firebase/firestore";
 import { LinearGradient } from "expo-linear-gradient";
+import { useTextStyle } from '../../../hooks/useTextStyle';
 
 const { width } = Dimensions.get("window");
 
@@ -42,6 +44,7 @@ const getRiskLevel = (percentage) => {
 const ResultCard = ({ item, onDelete, animationValue }) => {
   const scoreColors = getScoreColors(item.percentage);
   const risk = getRiskLevel(item.percentage);
+  const textStyle = useTextStyle();
   
   return (
     <Animated.View
@@ -59,17 +62,17 @@ const ResultCard = ({ item, onDelete, animationValue }) => {
         end={{ x: 1, y: 0 }}
         style={styles.scoreContainer}
       >
-        <Text style={styles.scoreText}>{item.percentage}%</Text>
+        <Text style={[styles.scoreText, textStyle]}>{item.percentage}%</Text>
       </LinearGradient>
       
       <View style={styles.resultInfo}>
-        <Text style={styles.dateText}>
+        <Text style={[styles.dateText, textStyle]}>
           {new Date(item.timestamp?.toDate()).toLocaleDateString()}
         </Text>
-        <Text style={styles.timeText}>
+        <Text style={[styles.timeText, textStyle]}>
           {new Date(item.timestamp?.toDate()).toLocaleTimeString()}
         </Text>
-        <Text style={[styles.riskText, { color: risk.color }]}>
+        <Text style={[styles.riskText, { color: risk.color }, textStyle]}>
           {risk.text}
         </Text>
       </View>
@@ -90,6 +93,7 @@ const PreviousResultsScreen = () => {
   const navigation = useNavigation();
   const user = auth.currentUser;
   const fadeAnim = new Animated.Value(0);
+  const textStyle = useTextStyle();
 
   useEffect(() => {
     if (user) {
