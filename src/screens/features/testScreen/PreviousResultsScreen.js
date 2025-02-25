@@ -97,7 +97,7 @@ const PreviousResultsScreen = () => {
 
   useEffect(() => {
     if (user) {
-      fetchResults();
+      fetchResults();  // Fetch results only if user is logged in
     }
   }, [user]);
 
@@ -116,7 +116,7 @@ const PreviousResultsScreen = () => {
     try {
       const q = query(
         collection(db, "testResults"),
-        where("userId", "==", user.uid)
+        where("userId", "==", user.uid)  // Fetch only the logged-in user's results
       );
       const querySnapshot = await getDocs(q);
       const fetchedResults = querySnapshot.docs
@@ -124,7 +124,7 @@ const PreviousResultsScreen = () => {
           id: doc.id,
           ...doc.data(),
         }))
-        .sort((a, b) => b.timestamp - a.timestamp);
+        .sort((a, b) => b.timestamp - a.timestamp); // Sort results by timestamp (newest first)
       setResults(fetchedResults);
     } catch (error) {
       console.error("Error fetching results:", error);
@@ -147,8 +147,8 @@ const PreviousResultsScreen = () => {
           style: "destructive",
           onPress: async () => {
             try {
-              await deleteDoc(doc(db, "testResults", id));
-              setResults(results.filter((item) => item.id !== id));
+              await deleteDoc(doc(db, "testResults", id));  // Delete result from Firestore
+              setResults(results.filter((item) => item.id !== id));  // Remove result from UI
             } catch (error) {
               console.error("Error deleting result:", error);
             }
@@ -162,9 +162,7 @@ const PreviousResultsScreen = () => {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Previous Results</Text>
-        <Text style={styles.subtitle}>
-          View and manage your test history
-        </Text>
+        <Text style={styles.subtitle}>View and manage your test history</Text>
       </View>
 
       {loading ? (
