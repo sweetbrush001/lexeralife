@@ -12,7 +12,8 @@ import PreviousResultsScreen from "../screens/features/testScreen/PreviousResult
 import TestIntroScreen from "../screens/features/testScreen/TestIntroScreen";
 import SettingsScreen from "../screens/SettingsScreen";
 import { SettingsProvider } from '../context/SettingsContext';
-
+import CommunityPage from "../screens/features/community/CommunityPage";
+import CreatePost from "../screens/features/community/CreatePost";
 const Stack = createNativeStackNavigator();
 
 const AppNavigator = () => {
@@ -30,6 +31,8 @@ const AppNavigator = () => {
         <Stack.Screen name="PreviousResults" component={PreviousResultsScreen} />
         <Stack.Screen name="TestIntro" component={TestIntroScreen} />
         <Stack.Screen name="settings" component={SettingsScreen} />
+        <Stack.Screen name="Community" component={CommunityPage} />
+        <Stack.Screen name="CreatePost" component={CreatePost} />
       </Stack.Navigator>
     </SettingsProvider>
   );

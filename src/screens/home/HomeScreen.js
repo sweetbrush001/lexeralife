@@ -6,8 +6,7 @@ import {
   StyleSheet,
   SafeAreaView,
   Image,
-  Platform,
-  ImageBackground, 
+  ImageBackground
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/FontAwesome5';
@@ -62,20 +61,6 @@ const HomeScreen = () => {
           />
         </View>
 
-        {/* Progress Bar */}
-        <View style={styles.progressContainer}>
-          <Text style={styles.progressText}>{progressValue}% progress</Text>
-          <View style={styles.progressBar}>
-            <View style={[styles.progressFill, { width: `${progressValue}%` }]} />
-            <View style={styles.progressDots}>
-              <View style={styles.dot} />
-              <View style={styles.dot} />
-              <View style={styles.dot} />
-              <View style={styles.dot} />
-            </View>
-          </View>
-        </View>
-
         {/* Feature Cards */}
         <View style={styles.featureContainer}>
           <TouchableOpacity 
@@ -108,6 +93,17 @@ const HomeScreen = () => {
                 <Icon name="clipboard-check" size={24} color="#FF9999" />
               </View>
               <Text style={styles.smallCardTitle}>Dyslexia Test</Text>
+            </TouchableOpacity>
+
+            {/* New Community Card */}
+            <TouchableOpacity 
+              style={[styles.smallCard, styles.communityCard]}
+              onPress={() => navigation.navigate('Community')}
+            >
+              <View style={styles.iconContainer}>
+                <Icon name="users" size={24} color="#FF9999" />
+              </View>
+              <Text style={styles.smallCardTitle}>Community</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -276,6 +272,14 @@ const styles = StyleSheet.create({
     padding: 20,
     marginBottom: 10,
   },
+  communityCard: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 10,
+    flex: 1,
+    justifyContent: 'space-between',
+  },
   iconContainer: {
     width: 40,
     height: 40,
@@ -312,10 +316,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 5,
   },
   profilePicture: {
     position: 'absolute',
