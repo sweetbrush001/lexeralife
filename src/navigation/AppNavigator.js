@@ -14,6 +14,7 @@ import SettingsScreen from "../screens/SettingsScreen";
 import { SettingsProvider } from '../context/SettingsContext';
 import CommunityPage from "../screens/features/community/CommunityPage";
 import CreatePost from "../screens/features/community/CreatePost";
+import ProfileSettingsScreen from "../screens/sidepanel/ProfileSettingsScreen";
 const Stack = createNativeStackNavigator();
 
 const AppNavigator = () => {
@@ -33,6 +34,7 @@ const AppNavigator = () => {
         <Stack.Screen name="settings" component={SettingsScreen} />
         <Stack.Screen name="Community" component={CommunityPage} />
         <Stack.Screen name="CreatePost" component={CreatePost} />
+        <Stack.Screen name="profile" component={ProfileSettingsScreen} />
       </Stack.Navigator>
     </SettingsProvider>
   );

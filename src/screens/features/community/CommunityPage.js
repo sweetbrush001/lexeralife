@@ -122,51 +122,63 @@ const CommunityPage = ({ navigation }) => {
     );
 
     const handleLike = useCallback(async (postId) => {
-        // Show visual feedback immediately
-        const updatedPosts = posts.map(post => {
-            if (post.id === postId) {
-                const userEmail = auth.currentUser?.email;
-                const alreadyLiked = post.likedUsers?.includes(userEmail);
-                
-                return {
-                    ...post,
-                    likes: alreadyLiked ? post.likes - 1 : post.likes + 1,
-                    likedUsers: alreadyLiked 
-                        ? post.likedUsers.filter(email => email !== userEmail)
-                        : [...(post.likedUsers || []), userEmail]
-                };
-            }
-            return post;
-        });
+        // Get current user email
+        const userEmail = auth.currentUser?.email;
+        if (!userEmail) return;
         
-        setPosts(updatedPosts);
+        // Find the post to update
+        const postToUpdate = posts.find(post => post.id === postId);
+        if (!postToUpdate) return;
+        
+        // Check if already liked
+        const alreadyLiked = postToUpdate.likedUsers?.includes(userEmail);
+        
+        // Create animation for immediate feedback
+        const scaleAnim = new Animated.Value(1);
+        Animated.sequence([
+            Animated.timing(scaleAnim, {
+                toValue: 1.2,
+                duration: 150,
+                useNativeDriver: true,
+            }),
+            Animated.timing(scaleAnim, {
+                toValue: 1,
+                duration: 150,
+                useNativeDriver: true,
+            }),
+        ]).start();
+        
+        // Update local state first with optimistic update
+        setPosts(currentPosts => 
+            currentPosts.map(post => {
+                if (post.id === postId) {
+                    return {
+                        ...post,
+                        likes: alreadyLiked ? post.likes - 1 : post.likes + 1,
+                        likedUsers: alreadyLiked 
+                            ? post.likedUsers.filter(email => email !== userEmail)
+                            : [...(post.likedUsers || []), userEmail],
+                        likeAnimation: scaleAnim
+                    };
+                }
+                return post;
+            })
+        );
         
         // Update in Firebase
         const postRef = doc(db, 'communityPosts', postId);
-        const userEmail = auth.currentUser?.email;
       
         try {
-            const postDoc = await getDoc(postRef);
-            if (postDoc.exists()) {
-                const postData = postDoc.data();
-                const likedUsers = postData.likedUsers || [];
-          
-                if (likedUsers.includes(userEmail)) {
-                    await updateDoc(postRef, {
-                        likes: increment(-1),
-                        likedUsers: arrayRemove(userEmail)
-                    });
-                } else {
-                    await updateDoc(postRef, {
-                        likes: increment(1),
-                        likedUsers: arrayUnion(userEmail)
-                    });
-                }
-            }
+            // Use atomic update operations to avoid race conditions
+            await updateDoc(postRef, {
+                likes: alreadyLiked ? increment(-1) : increment(1),
+                likedUsers: alreadyLiked ? arrayRemove(userEmail) : arrayUnion(userEmail)
+            });
         } catch (error) {
             console.error('Error updating like:', error);
             // Revert changes if failed
             fetchPosts();
+            Alert.alert("Error", "Failed to update like. Please try again.");
         }
     }, [posts]);
 
@@ -308,6 +320,47 @@ const CommunityPage = ({ navigation }) => {
         return date.toLocaleDateString();
     };
 
+    const deleteComment = async (postId, commentId) => {
+        // Show confirmation dialog
+        Alert.alert(
+            "Delete Comment",
+            "Are you sure you want to delete this comment?",
+            [
+                {
+                    text: "Cancel",
+                    style: "cancel"
+                },
+                { 
+                    text: "Delete", 
+                    onPress: async () => {
+                        try {
+                            // Get current post data
+                            const postRef = doc(db, 'communityPosts', postId);
+                            const postDoc = await getDoc(postRef);
+                            
+                            if (postDoc.exists()) {
+                                // Filter out the comment to delete
+                                const updatedComments = postDoc.data().comments.filter(
+                                    comment => comment.id !== commentId
+                                );
+                                
+                                // Update the post with new comments array
+                                await updateDoc(postRef, { comments: updatedComments });
+                                
+                                // Show success feedback
+                                // Visual feedback handled by Firebase listener
+                            }
+                        } catch (error) {
+                            console.error('Error deleting comment:', error);
+                            Alert.alert("Error", "Failed to delete comment. Please try again.");
+                        }
+                    },
+                    style: "destructive"
+                }
+            ]
+        );
+    };
+
     const renderComment = (comment, postId) => (
         <Animated.View 
             style={[styles.commentItem, { opacity: new Animated.Value(1) }]} 
@@ -359,9 +412,12 @@ const CommunityPage = ({ navigation }) => {
                 </TouchableOpacity>
                 
                 {comment.author === auth.currentUser?.email && (
-                    <TouchableOpacity style={styles.commentAction}>
-                        <Icon name="trash-alt" size={14} color="#666" />
-                        <Text style={styles.commentActionText}>Delete</Text>
+                    <TouchableOpacity 
+                        style={styles.commentAction}
+                        onPress={() => deleteComment(postId, comment.id)}
+                    >
+                        <Icon name="trash-alt" size={14} color="#FF3B30" />
+                        <Text style={[styles.commentActionText, {color: '#FF3B30'}]}>Delete</Text>
                     </TouchableOpacity>
                 )}
             </View>
@@ -728,421 +784,477 @@ const CommunityPage = ({ navigation }) => {
 export default CommunityPage;
 
 const styles = StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: '#f8f9fa',
-    },
-    header: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      paddingHorizontal: 16,
-      paddingVertical: 12,
-      backgroundColor: '#fff',
-      borderBottomWidth: 1,
-      borderBottomColor: 'rgba(0,0,0,0.05)',
-      zIndex: 10,
-      elevation: 3,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.05,
-      shadowRadius: 3,
-    },
-    headerTitle: {
-      fontSize: 20,
-      fontWeight: '700',
-      color: '#1a1a1a',
-    },
-    searchButton: {
-      width: 36,
-      height: 36,
-      borderRadius: 18,
-      backgroundColor: 'rgba(0,0,0,0.05)',
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    searchContainer: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: '#fff',
-      paddingHorizontal: 16,
-      paddingVertical: 10,
-      borderBottomWidth: 1,
-      borderBottomColor: 'rgba(0,0,0,0.05)',
-      zIndex: 9,
-    },
-    searchIcon: {
-      marginRight: 10,
-    },
-    searchInput: {
-      flex: 1,
-      height: 40,
-      fontSize: 16,
-      color: '#333',
-    },
-    clearButton: {
-      padding: 8,
-    },
-    listContent: {
-      paddingHorizontal: 12,
-      paddingTop: 8,
-      paddingBottom: 80,
-    },
-    postCard: {
-      backgroundColor: '#fff',
-      borderRadius: 16,
-      marginBottom: 12,
-      padding: 16,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.05,
-      shadowRadius: 3,
-      elevation: 2,
-      overflow: 'hidden',
-    },
-    cardHeader: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginBottom: 12,
-    },
-    avatar: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
-      marginRight: 10,
-    },
-    authorInfo: {
-      flex: 1,
-    },
-    postAuthor: {
-      fontSize: 15,
-      fontWeight: '600',
-      color: '#1a1a1a',
-    },
-    postTimestamp: {
-      fontSize: 13,
-      color: '#777',
-      marginTop: 1,
-    },
-    optionsButton: {
-      width: 32,
-      height: 32,
-      alignItems: 'center',
-      justifyContent: 'center',
-      borderRadius: 16,
-    },
-    postTitle: {
-      fontSize: 18,
-      fontWeight: '700',
-      color: '#1a1a1a',
-      marginBottom: 8,
-      lineHeight: 24,
-    },
-    postContent: {
-      fontSize: 15,
-      color: '#333',
-      lineHeight: 22,
-      marginBottom: 10,
-    },
-    readMore: {
-      fontSize: 14,
-      fontWeight: '600',
-      color: '#0066FF',
-      marginTop: -5,
-      marginBottom: 8,
-    },
-    postImage: {
-      width: '100%',
-      height: 200,
-      borderRadius: 12,
-      marginVertical: 8,
-    },
-    interactionStats: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginBottom: 8,
-    },
-    statItem: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginRight: 16,
-    },
-    statsText: {
-      fontSize: 13,
-      color: '#666',
-      marginLeft: 5,
-    },
-    separator: {
-      height: 1,
-      backgroundColor: 'rgba(0,0,0,0.05)',
-      marginVertical: 10,
-    },
-    postFooter: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-    },
-    interactionButton: {
-      flex: 1,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      paddingVertical: 8,
-      borderRadius: 8,
-    },
-    interactionText: {
-      fontSize: 14,
-      fontWeight: '500',
-      color: '#666',
-      marginLeft: 6,
-    },
-    activeInteractionText: {
-      color: '#0066FF',
-    },
-    expandedContent: {
-      marginTop: 16,
-    },
-    commentsHeader: {
-      fontSize: 15,
-      fontWeight: '600',
-      color: '#333',
-      marginBottom: 12,
-    },
-    commentSection: {
-      flexDirection: 'row',
-      alignItems: 'flex-start',
-      marginTop: 16,
-    },
-    commentInputAvatar: {
-      width: 32,
-      height: 32,
-      borderRadius: 16,
-      marginRight: 10,
-      marginTop: 4,
-    },
-    commentInputContainer: {
-      flex: 1,
-      flexDirection: 'row',
-      alignItems: 'flex-end',
-      backgroundColor: 'rgba(0,0,0,0.04)',
-      borderRadius: 20,
-      paddingLeft: 12,
-      paddingRight: 4,
-      paddingVertical: 8,
-    },
-    commentInput: {
-      flex: 1,
-      fontSize: 14,
-      maxHeight: 100,
-      color: '#333',
-      paddingTop: 0,
-      paddingBottom: Platform.OS === 'ios' ? 8 : 0,
-    },
-    sendButton: {
-      width: 34,
-      height: 34,
-      borderRadius: 17,
-      backgroundColor: '#0066FF',
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginLeft: 8,
-    },
-    disabledButton: {
-      backgroundColor: 'rgba(0,102,255,0.5)',
-    },
-    commentItem: {
-      marginBottom: 16,
-      paddingBottom: 8,
-      borderBottomWidth: 1,
-      borderBottomColor: 'rgba(0,0,0,0.03)',
-    },
-    commentHeader: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginBottom: 6,
-    },
-    commentAvatar: {
-      width: 28,
-      height: 28,
-      borderRadius: 14,
-      marginRight: 8,
-    },
-    commentAuthorContainer: {
-      flex: 1,
-    },
-    commentAuthor: {
-      fontSize: 14,
-      fontWeight: '600',
-      color: '#333',
-    },
-    commentTimestamp: {
-      fontSize: 12,
-      color: '#777',
-    },
-    commentText: {
-      fontSize: 14,
-      color: '#333',
-      lineHeight: 20,
-      marginBottom: 8,
-    },
-    commentActions: {
-      flexDirection: 'row',
-      alignItems: 'center',
-    },
-    commentAction: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginRight: 16,
-      paddingVertical: 4,
-    },
-    commentActionText: {
-      fontSize: 13,
-      color: '#777',
-      marginLeft: 4,
-    },
-    activeActionText: {
-      color: '#0066FF',
-    },
-    replyIndicator: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginBottom: 6,
-    },
-    replyText: {
-      fontSize: 12,
-      color: '#999',
-      marginLeft: 4,
-    },
-    replyInputContainer: {
-      flexDirection: 'row',
-      alignItems: 'flex-end',
-      backgroundColor: 'rgba(0,0,0,0.04)',
-      borderRadius: 20,
-      paddingLeft: 12,
-      paddingRight: 4,
-      paddingVertical: 8,
-      marginTop: 10,
-    },
-    replyInput: {
-      flex: 1,
-      fontSize: 14,
-      maxHeight: 80,
-      color: '#333',
-    },
-    replyButton: {
-      width: 32,
-      height: 32,
-      borderRadius: 16,
-      backgroundColor: '#0066FF',
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginLeft: 8,
-    },
-    fab: {
-      position: 'absolute',
-      bottom: 20,
-      right: 20,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 3 },
-      shadowOpacity: 0.15,
-      shadowRadius: 5,
-      elevation: 5,
-      zIndex: 999,
-    },
-    fabButton: {
-      width: 56,
-      height: 56,
-      borderRadius: 28,
-      backgroundColor: '#0066FF',
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    loaderContainer: {
-      flex: 1,
-      alignItems: 'center',
-      justifyContent: 'center',
-      paddingBottom: 40,
-    },
-    loaderText: {
-      marginTop: 16,
-      fontSize: 16,
-      color: '#666',
-    },
-    emptyContainer: {
-      alignItems: 'center',
-      justifyContent: 'center',
-      paddingVertical: 60,
-      paddingHorizontal: 30,
-    },
-    emptyText: {
-      fontSize: 16,
-      color: '#666',
-      textAlign: 'center',
-      marginTop: 16,
-      marginBottom: 20,
-    },
-    emptyButton: {
-      backgroundColor: '#0066FF',
-      paddingVertical: 12,
-      paddingHorizontal: 24,
-      borderRadius: 24,
-    },
-    emptyButtonText: {
-      fontSize: 14,
-      fontWeight: '600',
-      color: '#fff',
-    },
-    menuOverlay: {
-      ...StyleSheet.absoluteFillObject,
-      backgroundColor: 'rgba(0,0,0,0.4)',
-      justifyContent: 'flex-end',
-      zIndex: 999,
-    },
-    menuContainer: {
-      borderTopLeftRadius: 16,
-      borderTopRightRadius: 16,
-      overflow: 'hidden',
-      backgroundColor: 'rgba(255,255,255,0.95)',
-    },
-    menuItem: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingVertical: 16,
-      paddingHorizontal: 20,
-      borderBottomWidth: 1,
-      borderBottomColor: 'rgba(0,0,0,0.05)',
-    },
-    menuItemText: {
-      fontSize: 16,
-      marginLeft: 12,
-      color: '#333',
-    },
-    deleteMenuItem: {
-      borderBottomWidth: 0,
-    },
-    deleteText: {
-      color: '#ff3b30',
-    },
-    menuCancelButton: {
-      paddingVertical: 16,
-      alignItems: 'center',
-      backgroundColor: '#fff',
-      marginTop: 8,
-    },
-    menuCancelText: {
-      fontSize: 16,
-      fontWeight: '600',
-      color: '#0066FF',
-    },
-    loadingMoreContainer: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      paddingVertical: 20,
-    },
-    loadingMoreText: {
-      fontSize: 14,
-      color: '#666',
-      marginLeft: 8,
-    },
-  });
+  container: {
+    flex: 1,
+    backgroundColor: '#f0f2f5',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.05)',
+    zIndex: 10,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07,
+    shadowRadius: 5,
+  },
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#1a1a1a',
+  },
+  
+  // Modern post card styling
+  postCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    marginBottom: 16,
+    padding: 18,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.03)',
+  },
+  
+  // Enhanced comment section
+  commentItem: {
+    marginBottom: 16,
+    paddingBottom: 12,
+    paddingLeft: 10,
+    borderLeftWidth: 2,
+    borderLeftColor: '#e0e0e0',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.03)',
+  },
+  
+  // Better visual hierarchy for comments
+  commentHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  commentText: {
+    fontSize: 15,
+    color: '#333',
+    lineHeight: 22,
+    marginBottom: 10,
+    backgroundColor: 'rgba(0,0,0,0.02)',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  
+  // Enhanced buttons & interactions
+  interactionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    borderRadius: 10,
+    backgroundColor: 'rgba(0,0,0,0.02)',
+    marginHorizontal: 4,
+  },
+  interactionButtonActive: {
+    backgroundColor: 'rgba(0,102,255,0.1)',
+  },
+  interactionText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#666',
+    marginLeft: 8,
+  },
+  interactionTextActive: {
+    color: '#0066FF',
+  },
+  
+  // Improved FAB
+  fab: {
+    position: 'absolute',
+    bottom: 24,
+    right: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 6,
+    zIndex: 999,
+  },
+  fabButton: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#0066FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 3,
+    borderColor: 'rgba(255,255,255,0.3)',
+  },
+  
+  // Better form inputs
+  commentInputContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.02)',
+    borderRadius: 24,
+    paddingLeft: 16,
+    paddingRight: 6,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.05)',
+  },
+  
+  // The rest of your styles...
+  searchButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(0,0,0,0.05)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.05)',
+    zIndex: 9,
+  },
+  searchIcon: {
+    marginRight: 10,
+  },
+  searchInput: {
+    flex: 1,
+    height: 40,
+    fontSize: 16,
+    color: '#333',
+  },
+  clearButton: {
+    padding: 8,
+  },
+  listContent: {
+    paddingHorizontal: 12,
+    paddingTop: 8,
+    paddingBottom: 80,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 10,
+  },
+  authorInfo: {
+    flex: 1,
+  },
+  postAuthor: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#1a1a1a',
+  },
+  postTimestamp: {
+    fontSize: 13,
+    color: '#777',
+    marginTop: 1,
+  },
+  optionsButton: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 16,
+  },
+  postTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1a1a1a',
+    marginBottom: 8,
+    lineHeight: 24,
+  },
+  postContent: {
+    fontSize: 15,
+    color: '#333',
+    lineHeight: 22,
+    marginBottom: 10,
+  },
+  readMore: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#0066FF',
+    marginTop: -5,
+    marginBottom: 8,
+  },
+  postImage: {
+    width: '100%',
+    height: 200,
+    borderRadius: 12,
+    marginVertical: 8,
+  },
+  interactionStats: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  statItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  statsText: {
+    fontSize: 13,
+    color: '#666',
+    marginLeft: 5,
+  },
+  separator: {
+    height: 1,
+    backgroundColor: 'rgba(0,0,0,0.05)',
+    marginVertical: 10,
+  },
+  postFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  activeInteractionText: {
+    color: '#0066FF',
+  },
+  expandedContent: {
+    marginTop: 16,
+  },
+  commentsHeader: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 12,
+  },
+  commentSection: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginTop: 16,
+  },
+  commentInputAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    marginRight: 10,
+    marginTop: 4,
+  },
+  commentInput: {
+    flex: 1,
+    fontSize: 14,
+    maxHeight: 100,
+    color: '#333',
+    paddingTop: 0,
+    paddingBottom: Platform.OS === 'ios' ? 8 : 0,
+  },
+  sendButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: '#0066FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 8,
+  },
+  disabledButton: {
+    backgroundColor: 'rgba(0,102,255,0.5)',
+  },
+  commentAvatar: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    marginRight: 8,
+  },
+  commentAuthorContainer: {
+    flex: 1,
+  },
+  commentAuthor: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+  },
+  commentTimestamp: {
+    fontSize: 12,
+    color: '#777',
+  },
+  commentActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  commentAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 16,
+    paddingVertical: 4,
+  },
+  commentActionText: {
+    fontSize: 13,
+    color: '#777',
+    marginLeft: 4,
+  },
+  activeActionText: {
+    color: '#0066FF',
+  },
+  replyIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  replyText: {
+    fontSize: 12,
+    color: '#999',
+    marginLeft: 4,
+  },
+  replyInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.04)',
+    borderRadius: 20,
+    paddingLeft: 12,
+    paddingRight: 4,
+    paddingVertical: 8,
+    marginTop: 10,
+  },
+  replyInput: {
+    flex: 1,
+    fontSize: 14,
+    maxHeight: 80,
+    color: '#333',
+  },
+  replyButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#0066FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 8,
+  },
+  fab: {
+    position: 'absolute',
+    bottom: 24,
+    right: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 6,
+    zIndex: 999,
+  },
+  fabButton: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#0066FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 3,
+    borderColor: 'rgba(255,255,255,0.3)',
+  },
+  loaderContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingBottom: 40,
+  },
+  loaderText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#666',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+    paddingHorizontal: 30,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 16,
+    marginBottom: 20,
+  },
+  emptyButton: {
+    backgroundColor: '#0066FF',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 24,
+  },
+  emptyButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  menuOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'flex-end',
+    zIndex: 999,
+  },
+  menuContainer: {
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(255,255,255,0.95)',
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.05)',
+  },
+  menuItemText: {
+    fontSize: 16,
+    marginLeft: 12,
+    color: '#333',
+  },
+  deleteMenuItem: {
+    borderBottomWidth: 0,
+  },
+  deleteText: {
+    color: '#ff3b30',
+  },
+  menuCancelButton: {
+    paddingVertical: 16,
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    marginTop: 8,
+  },
+  menuCancelText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#0066FF',
+  },
+  loadingMoreContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 20,
+  },
+  loadingMoreText: {
+    fontSize: 14,
+    color: '#666',
+    marginLeft: 8,
+  },
+});
