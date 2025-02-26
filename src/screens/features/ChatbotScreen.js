@@ -15,9 +15,10 @@ import Icon from 'react-native-vector-icons/FontAwesome5';
 import axios from 'axios';
 import Markdown from 'react-native-markdown-display'; // Import the markdown display component
 import { useTextStyle } from '../../hooks/useTextStyle';
+import DraggableVoiceButton from '../../components/DraggableVoiceButton';
 
-const API_KEY = 'AIzaSyCc7aA7224XYMOJH2f599dM-4CT2kFqSEQ';
-const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${API_KEY}`;
+const API_KEY = 'AIzaSyAJmeBoyJoNd-cDgm_Xdnxy4vGMYkrxZ5Q';
+const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`;
 
 const ChatbotScreen = () => {
   const [messages, setMessages] = useState([
@@ -29,23 +30,40 @@ const ChatbotScreen = () => {
 
   const handleSend = async () => {
     if (!inputText.trim()) return;
-
+  
     const userMessage = { id: messages.length + 1, text: inputText, isBot: false };
     setMessages((prev) => [...prev, userMessage]);
     setInputText('');
-
+  
     try {
       const response = await axios.post(GEMINI_API_URL, {
-        contents: [{ parts: [{ text: inputText }] }], 
+        contents: [{
+          role: "user",
+          parts: [{
+            text: inputText
+          }]
+        }]
+      }, {
+        headers: {
+          'Content-Type': 'application/json',
+        }
       });
-
+  
       const botResponse =
         response.data?.candidates?.[0]?.content?.parts?.[0]?.text ||
         "Sorry, I couldn't process that.";
-
+  
       setMessages((prev) => [...prev, { id: prev.length + 1, text: botResponse, isBot: true }]);
     } catch (error) {
       console.error('Error fetching Gemini response:', error);
+      if (error.response) {
+        // Handle known errors from the server
+        Alert.alert("API Error", `Error: ${error.response.status} - ${error.response.data}`);
+      } else {
+        // Handle other errors like network issues
+        Alert.alert("Network Error", "There was an error connecting to the server. Please try again later.");
+      }
+  
       setMessages((prev) => [...prev, { id: prev.length + 1, text: 'Error: Unable to fetch response.', isBot: true }]);
     }
   };
@@ -102,6 +120,7 @@ const ChatbotScreen = () => {
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
+        <DraggableVoiceButton />
       </ImageBackground>
     </SafeAreaView>
   );

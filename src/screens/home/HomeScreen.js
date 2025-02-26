@@ -6,16 +6,15 @@ import {
   StyleSheet,
   SafeAreaView,
   Image,
-  ImageBackground
+  ImageBackground,
+  StatusBar
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/FontAwesome5';
-import { useTextStyle } from '../../hooks/useTextStyle';
+import TTSVoiceButton from '../../components/TTSVoiceButton'; // Import the new component
 
 const HomeScreen = () => {
   const navigation = useNavigation();
-  const progressValue = 30; // Example progress value
-  const textStyle = useTextStyle();
 
   return (
     <ImageBackground
@@ -44,13 +43,13 @@ const HomeScreen = () => {
         {/* Motivational Card */}
         <View style={styles.messageCard}>
           <View style={styles.messageContent}>
-            <Text style={[styles.messageText, textStyle]}>
-              <Text style={[styles.messageTextPart, textStyle]}>It is more </Text>
-              <Text style={[styles.highlightRed, textStyle]}>common </Text>
-              <Text style={[styles.messageTextPart, textStyle]}>than you can </Text>
-              <Text style={[styles.highlightBrown, textStyle]}>imagine. </Text>
-              <Text style={[styles.messageTextPart, textStyle]}>You are not </Text>
-              <Text style={[styles.highlightRed, textStyle]}>alone.</Text>
+            <Text style={styles.messageText}>
+              <Text style={styles.messageTextPart}>It is more </Text>
+              <Text style={styles.highlightRed}>common </Text>
+              <Text style={styles.messageTextPart}>than you can </Text>
+              <Text style={styles.highlightBrown}>imagine. </Text>
+              <Text style={styles.messageTextPart}>You are not </Text>
+              <Text style={styles.highlightRed}>alone.</Text>
             </Text>
           </View>
 
@@ -95,7 +94,6 @@ const HomeScreen = () => {
               <Text style={styles.smallCardTitle}>Dyslexia Test</Text>
             </TouchableOpacity>
 
-            {/* New Community Card */}
             <TouchableOpacity 
               style={[styles.smallCard, styles.communityCard]}
               onPress={() => navigation.navigate('Community')}
@@ -113,13 +111,13 @@ const HomeScreen = () => {
           <TouchableOpacity style={styles.navItem}>
             <Icon name="home" size={24} color="#fff" />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.navButton}>
-            <Icon name="microphone" size={24} color="#000" />
-          </TouchableOpacity>
           <TouchableOpacity style={styles.navItem}>
             <Icon name="user" size={24} color="#fff" />
           </TouchableOpacity>
         </View>
+        
+        {/* Draggable Voice Button (replaces the old FAB and mic button) */}
+        <TTSVoiceButton />
       </SafeAreaView>
     </ImageBackground>
   );
@@ -327,6 +325,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#fff',
   },
+  
 });
 
 export default HomeScreen;
