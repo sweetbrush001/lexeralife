@@ -1,14 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
-  View,
   Text,
   TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
   Animated,
-  Easing,
   PanResponder,
-  Dimensions
+  Dimensions,
+  Easing  // Add this import
 } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome5';
 import * as Speech from 'expo-speech'; // For Text-to-Speech
@@ -39,7 +37,11 @@ const DraggableVoiceButton = () => {
   // Create the PanResponder to handle dragging
   const panResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => !isExpanded,
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_, gestureState) => {
+        // Only recognize as drag if moved more than 10 units
+        return Math.abs(gestureState.dx) > 10 || Math.abs(gestureState.dy) > 10;
+      },
       onPanResponderGrant: () => {
         // Store the initial position when the drag starts
         pan.setOffset({
@@ -49,29 +51,27 @@ const DraggableVoiceButton = () => {
         // Reset the gesture value
         pan.setValue({ x: 0, y: 0 });
         
-        // Button press animation
-        Animated.sequence([
+        // Button press animation - useNativeDriver is set to false
+        Animated.sequence([ 
           Animated.timing(scaleAnim, {
             toValue: 0.9,
             duration: 100,
-            useNativeDriver: true,
+            useNativeDriver: false, // Make sure useNativeDriver is false for layout-related properties
           }),
           Animated.timing(scaleAnim, {
             toValue: 1,
             duration: 100,
-            useNativeDriver: true,
+            useNativeDriver: false, // Make sure useNativeDriver is false for layout-related properties
           })
         ]).start();
       },
       onPanResponderMove: Animated.event(
         [null, { dx: pan.x, dy: pan.y }],
-        { useNativeDriver: false }
+        { useNativeDriver: false } // Ensure useNativeDriver is false for pan-based gestures
       ),
       onPanResponderRelease: (_, gesture) => {
-        // Flatten the offset into the value
         pan.flattenOffset();
         
-        // Get current position
         let newX = pan.x._value;
         let newY = pan.y._value;
         
@@ -84,7 +84,7 @@ const DraggableVoiceButton = () => {
         // Update the position state and animate to it
         Animated.spring(pan, {
           toValue: { x: newX, y: newY },
-          useNativeDriver: false,
+          useNativeDriver: false, // Use Native Driver false for layout properties
           friction: 5
         }).start();
       }
@@ -94,7 +94,6 @@ const DraggableVoiceButton = () => {
   // Toggle FAB state
   const toggleFAB = () => {
     if (isExpanded) {
-      // Closing animation
       Animated.timing(fabAnim, {
         toValue: 0,
         duration: 300,
@@ -102,12 +101,11 @@ const DraggableVoiceButton = () => {
         easing: Easing.out(Easing.back(1.5)),
       }).start();
     } else {
-      // Opening animation
       Animated.timing(fabAnim, {
         toValue: 1,
         duration: 400,
         useNativeDriver: false,
-        easing: Easing.elastic(1.2),
+        easing: Easing.elastic(1.2), // Make sure this is the correct method name
       }).start();
     }
     setIsExpanded(!isExpanded);
@@ -142,9 +140,6 @@ const DraggableVoiceButton = () => {
 
         setStatus('Listening...');
         setIsListening(true);
-        
-        // In a real implementation, you would start recording here
-        // and process the recording for speech-to-text
         
         // Simulate STT with a timeout
         setTimeout(() => {
@@ -325,3 +320,4 @@ const styles = StyleSheet.create({
 });
 
 export default DraggableVoiceButton;
+

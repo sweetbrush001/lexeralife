@@ -32,6 +32,10 @@ const TTSVoiceButton = () => {
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true, // Always start drag
+      onMoveShouldSetPanResponder: (_, gestureState) => {
+        // Only recognize as drag if moved more than 10 units
+        return Math.abs(gestureState.dx) > 10 || Math.abs(gestureState.dy) > 10;
+      },
       onPanResponderGrant: () => {
         pan.setOffset({
           x: pan.x._value,
@@ -40,11 +44,11 @@ const TTSVoiceButton = () => {
         pan.setValue({ x: 0, y: 0 });
         
         // Button press animation (scale effect)
-        Animated.sequence([
+        Animated.sequence([ 
           Animated.timing(scaleAnim, {
             toValue: 0.9,
             duration: 100,
-            useNativeDriver: false, // Make sure useNativeDriver is false for non-native properties like scale
+            useNativeDriver: false,
           }),
           Animated.timing(scaleAnim, {
             toValue: 1,
@@ -55,10 +59,27 @@ const TTSVoiceButton = () => {
       },
       onPanResponderMove: Animated.event(
         [null, { dx: pan.x, dy: pan.y }],
-        { useNativeDriver: false } // Ensure useNativeDriver is false for gestures
+        { useNativeDriver: false }
       ),
       onPanResponderRelease: () => {
         pan.flattenOffset();
+        
+        // Add boundary checks
+        let newX = pan.x._value;
+        let newY = pan.y._value;
+        
+        // Ensure button stays within screen bounds
+        if (newX < 0) newX = 0;
+        if (newX > screenWidth - 70) newX = screenWidth - 70;
+        if (newY < 100) newY = 100; // Avoid top area
+        if (newY > screenHeight - 100) newY = screenHeight - 100;
+        
+        // Animate to the bounded position
+        Animated.spring(pan, {
+          toValue: { x: newX, y: newY },
+          useNativeDriver: false,
+          friction: 5
+        }).start();
       }
     })
   ).current;
@@ -99,30 +120,24 @@ const TTSVoiceButton = () => {
 
   return (
     <Animated.View
-      style={[
-        styles.container,
-        {
-          left: 0,
-          top: 0,
-          transform: [
-            { translateX: pan.x },
-            { translateY: pan.y },
-            { scale: scaleAnim }
-          ]
-        }
-      ]}
+      style={[styles.container, {
+        left: 0,
+        top: 0,
+        transform: [
+          { translateX: pan.x },
+          { translateY: pan.y },
+          { scale: scaleAnim }
+        ]
+      }]}
       {...panResponder.panHandlers}
     >
       {/* Status Text */}
       {status ? (
         <Animated.View
-          style={[
-            styles.statusBubble,
-            {
-              opacity: isSpeaking ? 1 : 0,
-              transform: [{ translateY: -80 }]
-            }
-          ]}
+          style={[styles.statusBubble, {
+            opacity: isSpeaking ? 1 : 0,
+            transform: [{ translateY: -80 }]
+          }]}
         >
           <Text style={styles.statusText}>{status}</Text>
         </Animated.View>

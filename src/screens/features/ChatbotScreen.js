@@ -17,8 +17,9 @@ import Markdown from 'react-native-markdown-display'; // Import the markdown dis
 import { useTextStyle } from '../../hooks/useTextStyle';
 import DraggableVoiceButton from '../../components/DraggableVoiceButton';
 
-const API_KEY = 'AIzaSyAJmeBoyJoNd-cDgm_Xdnxy4vGMYkrxZ5Q';
-const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`;
+const API_KEY = 'AIzaSyC4z7SclIMM4IUQJeEo_-DkesMuSlwgMsk';
+const modelname = 'tunedModels/lexerabotdyslexiadataset-nwcwefqh293';
+const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/${modelname}:generateContent?key=${API_KEY}`;
 
 const ChatbotScreen = () => {
   const [messages, setMessages] = useState([
