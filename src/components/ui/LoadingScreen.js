@@ -1,13 +1,26 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import OrbitLoader from './OrbitLoader';
+import { useNavigation } from '@react-navigation/native';
 
-const LoadingScreen = ({ 
-  message = 'Loading...', 
-  size = 45, 
+const LoadingScreen = ({
+  
+  message = 'Loading', 
+  size = 340, 
   color = '#0066FF',
   overlay = false 
 }) => {
+  const navigation = useNavigation();
+
+  useEffect(() => {
+      const timer = setTimeout(() => {
+        navigation.replace('Auth'); // Navigate to Auth after animation completes
+      }, 2000); // Duration of the animation (in ms)
+  
+      return () => clearTimeout(timer); // Cleanup the timer
+    }, [navigation]);
+
+
   return (
     <View style={[
       styles.container, 
@@ -43,7 +56,7 @@ const styles = StyleSheet.create({
   },
   message: {
     marginTop: 16,
-    fontSize: 16,
+    fontSize: 30,
     fontWeight: '500',
   }
 });

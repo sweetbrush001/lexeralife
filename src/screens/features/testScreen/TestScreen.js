@@ -161,12 +161,12 @@ const DyslexiaTestScreen = () => {
           <View style={styles.buttonContainer}>
             <TouchableOpacity style={[styles.button, styles.yesButton]} onPress={() => handleAnswer(true)}>
               <MaterialIcons name="check" size={24} color="white" />
-              <Text style={[styles.buttonText, textStyle]}>Yes</Text>
+              <Text style={[styles.buttonText, textStyle]}>Yees</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={[styles.button, styles.noButton]} onPress={() => handleAnswer(false)}>
               <MaterialIcons name="close" size={24} color="white" />
-              <Text style={[styles.buttonText, textStyle]}>No</Text>
+              <Text style={[styles.buttonText, textStyle]}>Nop</Text>
             </TouchableOpacity>
           </View>
         </View>
