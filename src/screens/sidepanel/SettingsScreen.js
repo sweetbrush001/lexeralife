@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TextInput, ScrollView, Pressable } from 'react-
 import { useFonts } from 'expo-font';
 import { MaterialIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useSettings } from '../context/SettingsContext';
+import { useSettings } from '../../context/SettingsContext';
 
 const ColorPresets = [
   { label: 'Black', value: '#000000' },
@@ -27,7 +27,7 @@ const ContrastPresets = [
 const SettingsScreen = () => {
   const { settings, updateSettings } = useSettings();
   const [fontsLoaded] = useFonts({
-    'OpenDyslexic-Regular': require('../../assets/fonts/OpenDyslexic3-Regular.ttf'),
+    'OpenDyslexic-Regular': require('../../../assets/fonts/OpenDyslexic3-Regular.ttf'),
   });
 
   const handleSettingChange = (key, value) => {

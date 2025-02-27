@@ -10,7 +10,7 @@ import TestScreen from "../screens/features/testScreen/TestScreen";
 import ResultsScreen from "../screens/features/testScreen/ResultsScreen"; // Correct import path
 import PreviousResultsScreen from "../screens/features/testScreen/PreviousResultsScreen";
 import TestIntroScreen from "../screens/features/testScreen/TestIntroScreen";
-import SettingsScreen from "../screens/SettingsScreen";
+import SettingsScreen from "../screens/sidepanel/SettingsScreen";
 import { SettingsProvider } from '../context/SettingsContext';
 import CommunityPage from "../screens/features/community/CommunityPage";
 import CreatePost from "../screens/features/community/CreatePost";

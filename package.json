@@ -31,6 +31,7 @@
     "expo-status-bar": "~2.0.1",
     "expo-web-browser": "~14.0.2",
     "firebase": "^11.3.0",
+    "ldrs": "^1.0.2",
     "lottie-react-native": "^7.1.0",
     "react": "18.3.1",
     "react-native": "0.76.6",
@@ -41,6 +42,7 @@
     "react-native-reanimated": "~3.16.1",
     "react-native-safe-area-context": "4.12.0",
     "react-native-screens": "~4.4.0",
+    "react-native-spinkit": "^1.5.1",
     "react-native-svg": "^15.8.0",
     "react-native-tts": "^4.1.1",
     "react-native-vector-icons": "^10.2.0"

@@ -23,6 +23,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { db, auth } from '../../../config/firebaseConfig';
 import LottieView from 'lottie-react-native';  // Import LottieView for animations
 import { FadeIn, SlideInRight, SlideInDown, SlideOutDown } from 'react-native-reanimated';
+import LoadingScreen from '../../../components/ui/LoadingScreen';
+import OrbitLoader from '../../../components/ui/OrbitLoader';
 
 
 const CommunityPage = ({ navigation }) => {
@@ -698,16 +700,7 @@ const CommunityPage = ({ navigation }) => {
             </Animated.View>
 
             {loading ? (
-                <View style={styles.loaderContainer}>
-                    {/* Lottie animation from a URL */}
-                    <LottieView
-                        source={{ uri: 'https://assets2.lottiefiles.com/packages/lf20_jyav9bkw.json' }}  // Example of an online Lottie file
-                        autoPlay
-                        loop
-                        style={{ width: 120, height: 120 }}
-                    />
-                    <Text style={styles.loaderText}>Loading posts...</Text>
-                </View>
+                <LoadingScreen message="Loading community posts..." />
             ) : (
                 <FlatList
                     data={filteredPosts}
@@ -721,16 +714,26 @@ const CommunityPage = ({ navigation }) => {
                         <RefreshControl
                             refreshing={refreshing}
                             onRefresh={onRefresh}
-                            colors={['#0066FF']}
-                            tintColor="#0066FF"
+                            tintColor="transparent"
+                            colors={["transparent"]}
+                            style={{ backgroundColor: 'transparent' }}
+                            progressViewOffset={20}
+                            progressBackgroundColor="transparent"
+                            renderToHardwareTextureAndroid
+                            title=""
                         />
                     }
+                    ListHeaderComponent={refreshing ? (
+                        <View style={styles.pullToRefresh}>
+                            <OrbitLoader size={30} color="#0066FF" />
+                        </View>
+                    ) : null}
                     onEndReached={loadMorePosts}
                     onEndReachedThreshold={0.3}
                     ListFooterComponent={
                         loadingMore ? (
                             <View style={styles.loadingMoreContainer}>
-                                <ActivityIndicator size="small" color="#0066FF" />
+                                <OrbitLoader size={30} color="#666" />
                                 <Text style={styles.loadingMoreText}>Loading more posts...</Text>
                             </View>
                         ) : null
@@ -1247,14 +1250,11 @@ const styles = StyleSheet.create({
     color: '#0066FF',
   },
   loadingMoreContainer: {
-    flexDirection: 'row',
+    padding: 20,
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 20,
   },
   loadingMoreText: {
-    fontSize: 14,
+    marginTop: 8,
     color: '#666',
-    marginLeft: 8,
   },
 });

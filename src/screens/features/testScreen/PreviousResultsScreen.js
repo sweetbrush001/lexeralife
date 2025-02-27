@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
-  ActivityIndicator,
   Dimensions,
   Animated,
   Platform,
@@ -18,6 +17,8 @@ import { auth, db } from "../../../config/firebaseConfig";
 import { collection, query, where, getDocs, deleteDoc, doc } from "firebase/firestore";
 import { LinearGradient } from "expo-linear-gradient";
 import { useTextStyle } from '../../../hooks/useTextStyle';
+import LoadingScreen from '../../../components/ui/LoadingScreen';
+import OrbitLoader from '../../../components/ui/OrbitLoader';
 
 const { width } = Dimensions.get("window");
 
@@ -41,7 +42,7 @@ const getRiskLevel = (percentage) => {
   }
 };
 
-const ResultCard = ({ item, onDelete, animationValue }) => {
+const ResultCard = ({ item, onDelete, animationValue, isDeleting }) => {
   const scoreColors = getScoreColors(item.percentage);
   const risk = getRiskLevel(item.percentage);
   const textStyle = useTextStyle();
@@ -56,6 +57,12 @@ const ResultCard = ({ item, onDelete, animationValue }) => {
         },
       ]}
     >
+      {isDeleting && (
+        <View style={styles.deletingOverlay}>
+          <OrbitLoader size={40} color="#FF5252" />
+        </View>
+      )}
+      
       <LinearGradient
         colors={scoreColors}
         start={{ x: 0, y: 0 }}
@@ -90,6 +97,7 @@ const ResultCard = ({ item, onDelete, animationValue }) => {
 const PreviousResultsScreen = () => {
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState(null); // Track which item is being deleted
   const navigation = useNavigation();
   const user = auth.currentUser;
   const fadeAnim = new Animated.Value(0);
@@ -147,10 +155,14 @@ const PreviousResultsScreen = () => {
           style: "destructive",
           onPress: async () => {
             try {
+              setDeletingId(id); // Set the deleting status
               await deleteDoc(doc(db, "testResults", id));  // Delete result from Firestore
               setResults(results.filter((item) => item.id !== id));  // Remove result from UI
             } catch (error) {
               console.error("Error deleting result:", error);
+              Alert.alert("Error", "Failed to delete this result. Please try again.");
+            } finally {
+              setDeletingId(null); // Clear the deleting status
             }
           },
         },
@@ -161,20 +173,17 @@ const PreviousResultsScreen = () => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Previous Results</Text>
-        <Text style={styles.subtitle}>View and manage your test history</Text>
+        <Text style={[styles.title, textStyle]}>Previous Results</Text>
+        <Text style={[styles.subtitle, textStyle]}>View and manage your test history</Text>
       </View>
 
       {loading ? (
-        <View style={styles.loaderContainer}>
-          <ActivityIndicator size="large" color="#6C63FF" />
-          <Text style={styles.loadingText}>Loading your results...</Text>
-        </View>
+        <LoadingScreen message="Loading your results..." color="#6C63FF" />
       ) : results.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Ionicons name="document-text-outline" size={64} color="#CBD5E0" />
-          <Text style={styles.noResults}>No previous results found</Text>
-          <Text style={styles.noResultsSubtext}>
+          <Text style={[styles.noResults, textStyle]}>No previous results found</Text>
+          <Text style={[styles.noResultsSubtext, textStyle]}>
             Take a test to see your results here
           </Text>
         </View>
@@ -187,6 +196,7 @@ const PreviousResultsScreen = () => {
               item={item}
               onDelete={deleteResult}
               animationValue={fadeAnim}
+              isDeleting={deletingId === item.id} // Pass the deleting status to the card
             />
           )}
           contentContainerStyle={styles.listContainer}
@@ -304,16 +314,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginLeft: 8,
   },
-  loaderContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: '#718096',
-  },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -331,6 +331,18 @@ const styles = StyleSheet.create({
     color: '#718096',
     marginTop: 8,
     textAlign: 'center',
+  },
+  deletingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255,255,255,0.85)',
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
   },
 });
 
