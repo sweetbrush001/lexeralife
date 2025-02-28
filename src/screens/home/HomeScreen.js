@@ -237,6 +237,18 @@ const HomeScreen = () => {
             <Text style={styles.featureTitle}>Lexera Bot</Text>
           </TouchableOpacity>
 
+          {/*Flascard Generation Card */}
+
+          <TouchableOpacity
+            style={[styles.featureCard, styles.flashcardCard]}
+            onPress = {() => navigation.navigate('FlashcardGeneration')}
+          >
+            <View style = {style.iconContainer}>
+              <Icon name = "file-alt" size={24} color="#FF9999" />
+            </View>
+            <Text style={styles.featureTitle}>Flashcards</Text>
+          </TouchableOpacity>
+
           <View style={styles.smallCardsContainer}>
             <TouchableOpacity 
               style={[styles.smallCard, styles.trainingCard]}
@@ -475,6 +487,16 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#666',
     marginTop: 10,
+  },
+  //Flashcard Styles
+  flashcardCard: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 20,
+    marginRight: 10,
   },
   smallCardsContainer: {
     flex: 1,
