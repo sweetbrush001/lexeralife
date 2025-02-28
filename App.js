@@ -1,15 +1,20 @@
-import 'react-native-gesture-handler';
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
-import AppNavigator from './src/navigation/AppNavigator';
+import { createStackNavigator } from '@react-navigation/stack';
+import GenerateFlashcardScreen from './screens/GenerateFlashcardScreen';
+import FlashcardListScreen from './screens/FlashcardListScreen';
 
-// Import the auth instance from firebaseConfig.js
-import { auth } from './src/config/firebaseConfig';
+const Stack = createStackNavigator();
 
-export default function App() {
+const App = () => {
   return (
     <NavigationContainer>
-      <AppNavigator initialRoute="Auth" />
+      <Stack.Navigator>
+        <Stack.Screen name="GenerateFlashcards" component={GenerateFlashcardScreen} />
+        <Stack.Screen name="FlashcardList" component={FlashcardListScreen} />
+      </Stack.Navigator>
     </NavigationContainer>
   );
-}
+};
+
+export default App;

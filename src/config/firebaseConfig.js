@@ -1,26 +1,20 @@
-import { initializeApp } from 'firebase/app'; // Import initializeApp directly
-import { getAuth } from 'firebase/auth'; // Import auth module directly
-import { getFirestore } from "firebase/firestore"; // Import Firestore module
-import { initializeAuth, getReactNativePersistence } from 'firebase/auth';
-import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage';        
+import firebase from '@react-native-firebase/app';
+import auth from '@react-native-firebase/auth';
+import firestore from '@react-native-firebase/firestore';
+import storage from '@react-native-firebase/storage';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyChjBTFM-wmcaPu64f4mn5Aiic8PE10G4Q",
-  authDomain: "lexeralife-c3c97.firebaseapp.com",
-  projectId: "lexeralife-c3c97",
-  storageBucket: "lexeralife-c3c97.firebasestorage.app",
-  messagingSenderId: "587825364063",
-  appId: "1:587825364063:web:20ae04f283f835b274afea",
-  measurementId: "G-P6E3V2918Z"
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_AUTH_DOMAIN",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_STORAGE_BUCKET",
+  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+  appId: "YOUR_APP_ID",
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
+}
 
-// Initialize Auth with persistence
-const auth = initializeAuth(app, {
-  persistence: getReactNativePersistence(ReactNativeAsyncStorage),
-});
+export { auth, firebase, firestore, storage };
 
-export { auth, db }; // Export the auth and db instances
