@@ -237,13 +237,13 @@ const HomeScreen = () => {
             <Text style={styles.featureTitle}>Lexera Bot</Text>
           </TouchableOpacity>
 
-          {/*Flascard Generation Card */}
+          {/*Flashcard Generation Card */}
 
           <TouchableOpacity
             style={[styles.featureCard, styles.flashcardCard]}
             onPress = {() => navigation.navigate('FlashcardGeneration')}
           >
-            <View style = {style.iconContainer}>
+            <View style = {style.stylesContainer}>
               <Icon name = "file-alt" size={24} color="#FF9999" />
             </View>
             <Text style={styles.featureTitle}>Flashcards</Text>
