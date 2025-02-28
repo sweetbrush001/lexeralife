@@ -23,6 +23,7 @@
     "expo": "52.0.0",
     "expo-auth-session": "~6.0.3",
     "expo-av": "~15.0.2",
+    "expo-document-picker": "~13.0.3",
     "expo-file-system": "~18.0.11",
     "expo-font": "~13.0.4",
     "expo-image-picker": "~16.0.6",
@@ -47,8 +48,7 @@
     "react-native-spinkit": "^1.5.1",
     "react-native-svg": "^15.8.0",
     "react-native-tts": "^4.1.1",
-    "react-native-vector-icons": "^10.2.0",
-    "expo-document-picker": "~13.0.3"
+    "react-native-vector-icons": "^10.2.0"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
