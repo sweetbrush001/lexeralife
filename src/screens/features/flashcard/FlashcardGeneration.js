@@ -1,8 +1,8 @@
 
 import React, {useState} from "react";
 import { View, Text, Button, StyleSheet, ActivityIndicator } from "react-native";
-import { pickAndProcessFile } from "../utils/fileProcessor";
-import Flashcard from "../components/Flashcard";
+import { pickAndProcessFile } from "../../../util/fileProcessor";
+import Flashcard from "../../components/Flashcard";
 
 const FlashcardGenerationScreen = () => {
   const [flashcards, setFlashcards] = useState([]);

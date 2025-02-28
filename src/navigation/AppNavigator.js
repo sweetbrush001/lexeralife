@@ -15,6 +15,9 @@ import CommunityPage from "../screens/features/community/CommunityPage";
 import CreatePost from "../screens/features/community/CreatePost";
 import ProfileSettingsScreen from "../screens/sidepanel/ProfileSettingsScreen";
 import LoadingScreen from "../components/ui/LoadingScreen";
+import FlashcardGenerationScreen from '../screens/features/flashcard/FlashcardGeneration';
+
+
 const Stack = createNativeStackNavigator();
 
 const AppNavigator = () => {
@@ -35,6 +38,7 @@ const AppNavigator = () => {
         <Stack.Screen name="Community" component={CommunityPage} />
         <Stack.Screen name="CreatePost" component={CreatePost} />
         <Stack.Screen name="profile" component={ProfileSettingsScreen} />
+        <Stack.Screen name="FlashcardGeneration" component  = {ProfileSettingsScreen}/>
       </Stack.Navigator>
     </SettingsProvider>
   );
