@@ -315,6 +315,17 @@ const HomeScreen = () => {
               <Text style={styles.smallCardTitle}>Dyslexia Test</Text>
             </TouchableOpacity>
 
+            {/* New Relax Card */}
+            <TouchableOpacity 
+              style={[styles.smallCard, styles.relaxCard]}
+              onPress={() => navigation.navigate('Relax')}
+            >
+              <View style={styles.iconContainer}>
+                <Icon name="spa" size={24} color="#FF9999" />
+              </View>
+              <Text style={styles.smallCardTitle}>Relax</Text>
+            </TouchableOpacity>
+
             <TouchableOpacity 
               style={[styles.smallCard, styles.communityCard]}
               onPress={() => navigation.navigate('Community')}
@@ -721,7 +732,13 @@ const styles = StyleSheet.create({
   copyrightText: {
     fontSize: 12,
     color: '#999',
-  }
+  },
+  relaxCard: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 10,
+  },
 });
 
 export default HomeScreen;

@@ -53,7 +53,7 @@ const SignupScreen = ({ navigation }) => {
     try {
       const auth = getAuth();
       await createUserWithEmailAndPassword(auth, email, password);
-      navigation.replace('Home');
+      navigation.replace('AgeRangeSelector');
     } catch (error) {
       let errorMessage = 'Failed to create account';
       
