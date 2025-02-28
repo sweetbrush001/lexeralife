@@ -45,5 +45,19 @@ const extractTextFromTXT = async (txtUri) => {
 export const pickAndProcessFile = async () => {
     const result = await DocumentPicker.getDocumentAsync({
         type: "*/*" , //Allowing all file types
-    })
-}
+    });
+
+    if (result.type === "success") {
+        const { uri, mimeType } = result;
+    
+        if (mimeType === "application/pdf") {
+          return await extractTextFromPDF(uri);
+        } else if (mimeType === "text/plain") {
+          return await extractTextFromTXT(uri);
+        } else {
+          console.warn("Unsupported file type:", mimeType);
+          return null;
+        }
+      }
+      return null;
+};
