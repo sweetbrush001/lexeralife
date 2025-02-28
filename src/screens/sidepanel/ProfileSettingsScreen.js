@@ -227,7 +227,7 @@ export default function ProfileSettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  // Use your existing styles from your ProfileSettingsScreen.js file.
+  // Using existing styles from your ProfileSettingsScreen.js file.
   
     container: {
       flex: 1,
