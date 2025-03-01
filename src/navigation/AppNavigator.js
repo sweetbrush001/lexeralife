@@ -1,5 +1,6 @@
 import React from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import SplashScreen from "../screens/SplashScreen";
 import AuthNavigator from "./AuthNavigator";
 import HomeScreen from "../screens/home/HomeScreen";
 import GameScreen from "../screens/features/GameScreen";
@@ -14,14 +15,13 @@ import { SettingsProvider } from '../context/SettingsContext';
 import CommunityPage from "../screens/features/community/CommunityPage";
 import CreatePost from "../screens/features/community/CreatePost";
 import ProfileSettingsScreen from "../screens/sidepanel/ProfileSettingsScreen";
-import LoadingScreen from "../components/ui/LoadingScreen";
 const Stack = createNativeStackNavigator();
 
 const AppNavigator = () => {
   return (
     <SettingsProvider>
-      <Stack.Navigator initialRouteName="loadingscreen" screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="loadingscreen" component={LoadingScreen} />
+      <Stack.Navigator initialRouteName="Splash" screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="Splash" component={SplashScreen} />
         <Stack.Screen name="Auth" component={AuthNavigator} />
         <Stack.Screen name="Home" component={HomeScreen} />
         <Stack.Screen name="Game" component={GameScreen} />
