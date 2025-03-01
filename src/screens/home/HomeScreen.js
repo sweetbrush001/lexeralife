@@ -16,8 +16,7 @@ import {
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/FontAwesome5';
 import TTSVoiceButton from '../../components/TTSVoiceButton';
-import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
+import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../../config/firebaseConfig'; // Import from your config file
 
 const { width } = Dimensions.get('window');
@@ -29,56 +28,10 @@ const HomeScreen = () => {
   const [currentTextIndex, setCurrentTextIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
-  const [currentUser, setCurrentUser] = useState(null);
-  const [userProfileImage, setUserProfileImage] = useState(null);
   
   // Animation value for side panel
   const slideAnim = useRef(new Animated.Value(-PANEL_WIDTH)).current;
   const overlayOpacity = useRef(new Animated.Value(0)).current;
-
-  // Get current user information including profile image from Firestore
-  useEffect(() => {
-    const fetchUserData = async () => {
-      const auth = getAuth();
-      const user = auth.currentUser;
-      
-      if (user) {
-        try {
-          // First set basic user info from auth
-          setCurrentUser({
-            email: user.email,
-            displayName: user.displayName || 'Lexera User',
-            photoURL: user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.email)}&background=random&color=fff&size=256`
-          });
-          
-          // Then fetch additional data from Firestore
-          const userDocRef = doc(db, "users", user.uid);
-          const docSnap = await getDoc(userDocRef);
-          
-          if (docSnap.exists()) {
-            const userData = docSnap.data();
-            
-            // Update user info with data from Firestore
-            setCurrentUser(prev => ({
-              ...prev,
-              displayName: userData.name || prev.displayName,
-              // Update profile image if it exists in Firestore
-              photoURL: userData.profileImage || prev.photoURL
-            }));
-            
-            // Store profile image separately for easier access
-            if (userData.profileImage) {
-              setUserProfileImage(userData.profileImage);
-            }
-          }
-        } catch (error) {
-          console.error("Error fetching user data:", error);
-        }
-      }
-    };
-    
-    fetchUserData();
-  }, []);
 
   // Close panel when back button is pressed
   useFocusEffect(
@@ -156,7 +109,7 @@ const HomeScreen = () => {
           { text: 'Logout', onPress: () => console.log('User logged out') },
         ]);
       } else if (screen === 'feedback') {
-        navigation.navigate('Feedback');
+        Alert.alert('Feedback', 'Thank you for your interest in providing feedback!');
       } else {
         navigation.navigate(screen);
       }
@@ -232,16 +185,6 @@ const HomeScreen = () => {
   // Current text to display
   const currentMotivationalText = motivationalTexts[currentTextIndex] || "Loading inspiration...";
 
-  // Generate a profile image URL prioritizing Firestore data
-  const getProfileImage = () => {
-    if (userProfileImage) {
-      return { uri: userProfileImage };
-    } else if (currentUser && currentUser.photoURL) {
-      return { uri: currentUser.photoURL };
-    }
-    return require('../../../assets/profilepic.png');
-  };
-
   return (
     <ImageBackground
       source={require('../../../assets/home_back.png')}
@@ -274,9 +217,9 @@ const HomeScreen = () => {
             </Text>
           </View>
 
-          {/* User Profile Picture */}
+          {/* Profile Picture */}
           <Image
-            source={getProfileImage()}
+            source={require('../../../assets/profilepic.png')}
             style={styles.profilePicture}
           />
         </View>
@@ -315,17 +258,6 @@ const HomeScreen = () => {
               <Text style={styles.smallCardTitle}>Dyslexia Test</Text>
             </TouchableOpacity>
 
-            {/* New Relax Card */}
-            <TouchableOpacity 
-              style={[styles.smallCard, styles.relaxCard]}
-              onPress={() => navigation.navigate('Relax')}
-            >
-              <View style={styles.iconContainer}>
-                <Icon name="spa" size={24} color="#FF9999" />
-              </View>
-              <Text style={styles.smallCardTitle}>Relax</Text>
-            </TouchableOpacity>
-
             <TouchableOpacity 
               style={[styles.smallCard, styles.communityCard]}
               onPress={() => navigation.navigate('Community')}
@@ -338,7 +270,7 @@ const HomeScreen = () => {
           </View>
         </View>
 
-        {/* Bottom Navigation - Fix the syntax error */}
+        {/* Bottom Navigation */}
         <View style={styles.bottomNav}>
           <TouchableOpacity style={styles.navItem}>
             <Icon name="home" size={24} color="#fff" />
@@ -379,16 +311,12 @@ const HomeScreen = () => {
             <View style={styles.sidePanelHeader}>
               <View style={styles.profileSection}>
                 <Image
-                  source={getProfileImage()}
+                  source={require('../../../assets/profilepic.png')}
                   style={styles.sidePanelProfilePic}
                 />
                 <View style={styles.userInfoContainer}>
-                  <Text style={styles.sidePanelUsername}>
-                    {currentUser ? currentUser.displayName : 'Loading...'}
-                  </Text>
-                  <Text style={styles.sidePanelEmail}>
-                    {currentUser ? currentUser.email : ''}
-                  </Text>
+                  <Text style={styles.sidePanelUsername}>Alex Johnson</Text>
+                  <Text style={styles.sidePanelEmail}>alex.johnson@example.com</Text>
                 </View>
               </View>
               <TouchableOpacity 
@@ -732,13 +660,7 @@ const styles = StyleSheet.create({
   copyrightText: {
     fontSize: 12,
     color: '#999',
-  },
-  relaxCard: {
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    padding: 20,
-    marginBottom: 10,
-  },
+  }
 });
 
 export default HomeScreen;
