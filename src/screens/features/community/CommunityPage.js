@@ -23,7 +23,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { db, auth } from '../../../config/firebaseConfig';
 import LottieView from 'lottie-react-native';  // Import LottieView for animations
 import { FadeIn, SlideInRight, SlideInDown, SlideOutDown } from 'react-native-reanimated';
-import LoadingScreen from '../../../components/ui/LoadingScreen';
+import LoadingScreen from '../../../screens/loading/LoadingScreen';
 import OrbitLoader from '../../../components/ui/OrbitLoader';
 
 

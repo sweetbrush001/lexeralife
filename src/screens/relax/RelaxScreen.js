@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,21 +8,194 @@ import {
   ScrollView,
   StatusBar,
   ImageBackground,
-  Dimensions
+  Dimensions,
+  ActivityIndicator
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/FontAwesome5';
-import { LinearGradient } from 'expo-linear-gradient';
-import TTSVoiceButton from '../../components/TTSVoiceButton';
+import { LinearGradient } from 'expo-linear-gradient'; 
+import useAudioPlayer from '../../hooks/useAudioPlayer';
+import useTimer from '../../hooks/useTimer';
+import MusicPlayer from '../../components/MusicPlayer';
+import { validateCloudinaryResources, getAllRelaxationSoundUrls } from '../../utils/CloudinaryHelper';
 
 const { width, height } = Dimensions.get('window');
-const cardSize = width / 2 - 30; // Calculate card size based on screen width
+const cardSize = width / 2 - 30;
 
 const RelaxScreen = () => {
   const navigation = useNavigation();
-  const [playingTrack, setPlayingTrack] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [trackUrls, setTrackUrls] = useState({});
+  const [error, setError] = useState(null);
+  const [loadingSoundId, setLoadingSoundId] = useState(null);
+  const [favorites, setFavorites] = useState([]);
+  const [unavailableTracks, setUnavailableTracks] = useState([]);
   
-  // Sound tracks data
+  // Added to prevent URL fetching loop
+  const urlsLoadedRef = useRef(false);
+  const validationRunningRef = useRef(false);
+  
+  // Use our new audio player hook
+  const { 
+    currentTrack, 
+    isPlaying, 
+    loading: audioLoading, 
+    error: audioError, 
+    volume,
+    playTrack,
+    stopTrack,
+    togglePlayPause,
+    setVolume,
+    clearError: clearAudioError
+  } = useAudioPlayer();
+  
+  // Use our timer hook
+  const { 
+    timeLeft, 
+    isRunning: timerIsRunning, 
+    startTimer, 
+    stopTimer, 
+    formatTime: formatTimerDisplay 
+  } = useTimer(onTimerComplete);
+  
+  // Handle timer completion with proper state updates
+  function onTimerComplete() {
+    console.log("Timer completed - stopping playback");
+    stopTrack().then(() => {
+      // Make sure UI reflects stopped state
+      setError(null);
+    });
+  }
+  
+  // Show any audio errors
+  useEffect(() => {
+    let errorTimer;
+    
+    if (audioError) {
+      setError(audioError);
+      errorTimer = setTimeout(() => {
+        clearAudioError();
+        setError(null);
+      }, 3000);
+    }
+    
+    return () => {
+      if (errorTimer) clearTimeout(errorTimer);
+    };
+  }, [audioError, clearAudioError]);
+
+  // Fetch and validate music URLs - FIXED to prevent infinite loop
+  useEffect(() => {
+    // Skip if we've already loaded URLs or if validation is in progress
+    if (urlsLoadedRef.current || validationRunningRef.current) return;
+    
+    validationRunningRef.current = true;
+    
+    const fetchAndValidateUrls = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Get URLs
+        const urls = getAllRelaxationSoundUrls();
+        console.log("Generated URLs once:", urls);
+        
+        // Validate resources
+        const { valid, invalidResources } = await validateCloudinaryResources(urls);
+        
+        if (!valid && invalidResources.length > 0) {
+          console.warn("Some resources unavailable:", invalidResources);
+          setUnavailableTracks(invalidResources);
+        }
+        
+        setTrackUrls(urls);
+        urlsLoadedRef.current = true; // Mark as loaded
+      } catch (err) {
+        console.error("Error setting up music URLs:", err);
+        setError("Failed to load music tracks. Please check your connection.");
+      } finally {
+        setLoading(false);
+        validationRunningRef.current = false;
+      }
+    };
+    
+    fetchAndValidateUrls();
+    
+    // Empty dependency array - only run once on mount
+  }, []);
+  
+  // Separate cleanup effect
+  useEffect(() => {
+    return () => {
+      console.log("Cleaning up RelaxScreen");
+      stopTrack();
+    };
+  }, [stopTrack]);
+  
+  // Improved track selection with error checking
+  const handleTrackSelect = useCallback(async (trackId) => {
+    // Check if track is unavailable
+    if (unavailableTracks.includes(trackId)) {
+      setError(`This track is currently unavailable.`);
+      return;
+    }
+    
+    try {
+      setLoadingSoundId(trackId);
+      
+      const track = soundTracks.find(t => t.id === trackId);
+      if (!track) {
+        setError(`Track ${trackId} not found`);
+        return;
+      }
+      
+      const uri = trackUrls[trackId];
+      if (!uri) {
+        setError(`URL for track ${track.name} not found`);
+        return;
+      }
+      
+      // If this track is already playing, stop it
+      if (currentTrack?.id === trackId && isPlaying) {
+        await stopTrack();
+      } else {
+        // Otherwise play the new track
+        await playTrack(uri, trackId, track);
+      }
+    } catch (err) {
+      console.error("Error selecting track:", err);
+      setError(`Failed to play ${trackId}`);
+    } finally {
+      setLoadingSoundId(null);
+    }
+  }, [unavailableTracks, trackUrls, playTrack, stopTrack, currentTrack, isPlaying, soundTracks]);
+
+  // Add a function to toggle favorite status
+  const toggleFavorite = (trackId) => {
+    if (favorites.includes(trackId)) {
+      setFavorites(favorites.filter(id => id !== trackId));
+    } else {
+      setFavorites([...favorites, trackId]);
+    }
+  };
+
+  // Handle starting a timed session
+  const handleStartTimer = (minutes) => {
+    if (!currentTrack) {
+      setError("Please select a track before starting the timer");
+      return;
+    }
+    
+    startTimer(minutes);
+  };
+
+  // Add a function for the featured mix
+  const playFeaturedMix = () => {
+    // Play the rainfall track as a featured mix
+    handleTrackSelect('rain');
+  };
+
+  // Updated sound tracks data - only include the 5 tracks you have
   const soundTracks = [
     { 
       id: 'rain', 
@@ -53,60 +226,13 @@ const RelaxScreen = () => {
       gradient: ['#E64A19', '#FF9800']
     },
     { 
-      id: 'night', 
-      name: 'Night Sounds', 
-      icon: 'moon', 
-      color: '#5C6BC0',
-      gradient: ['#3949AB', '#7986CB']
-    },
-    { 
-      id: 'wind', 
-      name: 'Gentle Breeze', 
-      icon: 'wind', 
-      color: '#78909C',
-      gradient: ['#546E7A', '#90A4AE']
-    },
-    { 
       id: 'piano', 
       name: 'Peaceful Piano', 
       icon: 'music', 
       color: '#EC407A',
       gradient: ['#D81B60', '#F06292']
-    },
-    { 
-      id: 'meditation', 
-      name: 'Meditation Bells', 
-      icon: 'bell', 
-      color: '#AB47BC',
-      gradient: ['#8E24AA', '#CE93D8']
-    },
-    { 
-      id: 'birds', 
-      name: 'Birdsong', 
-      icon: 'dove', 
-      color: '#26A69A',
-      gradient: ['#00897B', '#4DB6AC']
-    },
-    { 
-      id: 'whitenoise', 
-      name: 'White Noise', 
-      icon: 'fan', 
-      color: '#7E57C2',
-      gradient: ['#5E35B1', '#9575CD']
     }
   ];
-
-  // Toggle sound playback
-  const toggleSound = (trackId) => {
-    if (playingTrack === trackId) {
-      setPlayingTrack(null); // Stop playing
-    } else {
-      setPlayingTrack(trackId); // Start playing this track
-    }
-    
-    // Here you would actually play/pause sounds using a sound library
-    // For this example, we're just tracking the selected state
-  };
 
   return (
     <ImageBackground
@@ -149,6 +275,80 @@ const RelaxScreen = () => {
               </View>
             </View>
             
+            {/* Favorites Section - New */}
+            {favorites.length > 0 && (
+              <>
+                <View style={styles.sectionHeader}>
+                  <Text style={styles.sectionTitle}>Your Favorites</Text>
+                </View>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.favoritesContainer}
+                >
+                  {soundTracks
+                    .filter(track => favorites.includes(track.id))
+                    .map(track => (
+                      <TouchableOpacity
+                        key={`fav-${track.id}`}
+                        style={styles.favoriteCard}
+                        onPress={() => handleTrackSelect(track.id)}
+                      >
+                        <LinearGradient
+                          colors={track.gradient}
+                          style={styles.favoriteGradient}
+                        >
+                          <Icon name={track.icon} size={24} color="#fff" />
+                          <Text style={styles.favoriteText}>{track.name}</Text>
+                        </LinearGradient>
+                      </TouchableOpacity>
+                    ))}
+                </ScrollView>
+              </>
+            )}
+            
+            {/* Timer Controls - New */}
+            <View style={styles.timerContainer}>
+              <Text style={styles.timerTitle}>Relaxation Timer</Text>
+              <View style={styles.timerButtons}>
+                <TouchableOpacity 
+                  style={[styles.timerButton, timerIsRunning && styles.timerButtonDisabled]} 
+                  onPress={() => handleStartTimer(5)}
+                  disabled={timerIsRunning}
+                >
+                  <Text style={styles.timerButtonText}>5 Min</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.timerButton, timerIsRunning && styles.timerButtonDisabled]} 
+                  onPress={() => handleStartTimer(15)}
+                  disabled={timerIsRunning}
+                >
+                  <Text style={styles.timerButtonText}>15 Min</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.timerButton, timerIsRunning && styles.timerButtonDisabled]} 
+                  onPress={() => handleStartTimer(30)}
+                  disabled={timerIsRunning}
+                >
+                  <Text style={styles.timerButtonText}>30 Min</Text>
+                </TouchableOpacity>
+              </View>
+              
+              {timerIsRunning && (
+                <View style={styles.timerActiveContainer}>
+                  <Text style={styles.timerCountdown}>
+                    Time remaining: {formatTimerDisplay()}
+                  </Text>
+                  <TouchableOpacity 
+                    style={styles.timerCancelButton}
+                    onPress={stopTimer}
+                  >
+                    <Text style={styles.timerCancelText}>Cancel Timer</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+            
             {/* Popular Category Title */}
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Popular Tracks</Text>
@@ -158,48 +358,98 @@ const RelaxScreen = () => {
             </View>
             
             {/* Sounds Grid */}
-            <View style={styles.soundGrid}>
-              {soundTracks.map((track) => (
+            {loading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#FF9999" />
+                <Text style={styles.loadingText}>Loading sounds...</Text>
+              </View>
+            ) : error ? (
+              <View style={styles.errorContainer}>
+                <Icon name="exclamation-circle" size={40} color="#FF5E62" />
+                <Text style={styles.errorText}>{error}</Text>
                 <TouchableOpacity 
-                  key={track.id} 
-                  style={styles.soundCard}
-                  onPress={() => toggleSound(track.id)}
-                  activeOpacity={0.7}
+                  style={styles.retryButton}
+                  onPress={() => navigation.replace('Relax')}
                 >
-                  <LinearGradient
-                    colors={track.gradient}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={styles.soundCardGradient}
-                  >
-                    <View style={styles.soundIconContainer}>
-                      <Icon name={track.icon} size={36} color="#fff" />
-                      {playingTrack === track.id && (
-                        <View style={styles.playingIndicator}>
-                          <Icon name="volume-up" size={14} color="#fff" />
-                        </View>
-                      )}
-                    </View>
-                    <Text style={styles.soundName}>{track.name}</Text>
-                    <TouchableOpacity 
-                      style={styles.playButton}
-                      onPress={() => toggleSound(track.id)}
-                    >
-                      <Icon 
-                        name={playingTrack === track.id ? "pause" : "play"} 
-                        size={16} 
-                        color="#fff" 
-                      />
-                    </TouchableOpacity>
-                  </LinearGradient>
+                  <Text style={styles.retryText}>Retry</Text>
                 </TouchableOpacity>
-              ))}
-            </View>
+              </View>
+            ) : (
+              <View style={styles.soundGrid}>
+                {soundTracks.map((track) => (
+                  <TouchableOpacity 
+                    key={track.id} 
+                    style={[
+                      styles.soundCard, 
+                      currentTrack?.id === track.id && styles.activeCard
+                    ]}
+                    onPress={() => handleTrackSelect(track.id)}
+                    activeOpacity={0.7}
+                  >
+                    <LinearGradient
+                      colors={track.gradient}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={styles.soundCardGradient}
+                    >
+                      <View style={styles.soundCardHeader}>
+                        <TouchableOpacity
+                          onPress={(e) => {
+                            e.stopPropagation();
+                            toggleFavorite(track.id);
+                          }}
+                          style={styles.favoriteButton}
+                        >
+                          <Icon 
+                            name="heart" 
+                            size={16} 
+                            color="#fff" 
+                            solid={favorites.includes(track.id)}
+                          />
+                        </TouchableOpacity>
+                      </View>
+                      
+                      <View style={styles.soundIconContainer}>
+                        {loadingSoundId === track.id || (currentTrack?.id === track.id && audioLoading) ? (
+                          <ActivityIndicator size="small" color="#fff" />
+                        ) : (
+                          <Icon name={track.icon} size={36} color="#fff" />
+                        )}
+                        {currentTrack?.id === track.id && isPlaying && (
+                          <View style={styles.playingIndicator}>
+                            <Icon name="volume-up" size={14} color="#fff" />
+                          </View>
+                        )}
+                      </View>
+                      
+                      <Text style={styles.soundName}>{track.name}</Text>
+                      
+                      <TouchableOpacity 
+                        style={[
+                          styles.playButton,
+                          currentTrack?.id === track.id && styles.activePlayButton
+                        ]}
+                        onPress={() => handleTrackSelect(track.id)}
+                      >
+                        <Icon 
+                          name={currentTrack?.id === track.id && isPlaying ? "stop" : "play"} 
+                          size={16} 
+                          color={currentTrack?.id === track.id ? track.gradient[0] : "#fff"} 
+                        />
+                      </TouchableOpacity>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
             
             {/* Featured Track */}
             <View style={styles.featuredContainer}>
               <Text style={styles.featuredTitle}>Featured Mix</Text>
-              <TouchableOpacity style={styles.featuredCard}>
+              <TouchableOpacity 
+                style={styles.featuredCard}
+                onPress={playFeaturedMix}
+              >
                 <LinearGradient
                   colors={['#FF9966', '#FF5E62']}
                   style={styles.featuredGradient}
@@ -220,29 +470,17 @@ const RelaxScreen = () => {
           </ScrollView>
           
           {/* Currently Playing Bar (shows when a track is playing) */}
-          {playingTrack && (
-            <View style={styles.nowPlayingBar}>
-              <View style={styles.nowPlayingInfo}>
-                <Icon 
-                  name={soundTracks.find(t => t.id === playingTrack)?.icon || 'music'} 
-                  size={24} 
-                  color="#fff" 
-                />
-                <Text style={styles.nowPlayingText}>
-                  {soundTracks.find(t => t.id === playingTrack)?.name || 'Track'}
-                </Text>
-              </View>
-              <TouchableOpacity 
-                style={styles.nowPlayingControl}
-                onPress={() => setPlayingTrack(null)}
-              >
-                <Icon name="stop" size={18} color="#fff" />
-              </TouchableOpacity>
-            </View>
+          {currentTrack && (
+            <MusicPlayer
+              track={currentTrack}
+              isPlaying={isPlaying}
+              loading={audioLoading}
+              onStop={stopTrack}
+              timerText={timerIsRunning ? formatTimerDisplay() : null}
+              style={styles.nowPlayingBar}
+            />
           )}
           
-          {/* Draggable Voice Button */}
-          <TTSVoiceButton />
         </SafeAreaView>
       </LinearGradient>
     </ImageBackground>
@@ -464,6 +702,147 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.2)',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#FF9999',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  errorText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#FF5E62',
+    textAlign: 'center',
+  },
+  retryButton: {
+    marginTop: 20,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    backgroundColor: '#FF5E62',
+    borderRadius: 20,
+  },
+  retryText: {
+    color: '#fff',
+    fontSize: 16,
+  },
+  // New styles for the enhanced UI
+  activeCard: {
+    transform: [{scale: 1.02}],
+  },
+  soundCardHeader: {
+    position: 'absolute',
+    top: 5,
+    right: 5,
+    zIndex: 10,
+  },
+  favoriteButton: {
+    padding: 8,
+  },
+  activePlayButton: {
+    backgroundColor: '#fff',
+  },
+  favoritesContainer: {
+    paddingHorizontal: 15,
+    paddingBottom: 10,
+  },
+  favoriteCard: {
+    width: 100,
+    height: 100,
+    marginRight: 10,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  favoriteGradient: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 10,
+  },
+  favoriteText: {
+    color: '#fff',
+    marginTop: 5,
+    fontSize: 12,
+    textAlign: 'center',
+  },
+  timerContainer: {
+    margin: 20,
+    backgroundColor: 'rgba(255,255,255,0.8)',
+    borderRadius: 12,
+    padding: 15,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+  },
+  timerTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 10,
+  },
+  timerButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  timerButton: {
+    backgroundColor: '#FF9999',
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    borderRadius: 20,
+    flex: 1,
+    marginHorizontal: 5,
+    alignItems: 'center',
+  },
+  timerButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+  timerCountdown: {
+    textAlign: 'center',
+    marginTop: 15,
+    fontSize: 16,
+    color: '#FF5E62',
+    fontWeight: 'bold',
+  },
+  controlsContainer: {
+    flexDirection: 'row',
+  },
+  nowPlayingTimer: {
+    marginLeft: 10,
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 14,
+  },
+  timerButtonDisabled: {
+    backgroundColor: '#cccccc',
+    opacity: 0.7,
+  },
+  timerActiveContainer: {
+    alignItems: 'center',
+    marginTop: 15,
+  },
+  timerCancelButton: {
+    marginTop: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    backgroundColor: '#FF5E62',
+    borderRadius: 20,
+  },
+  timerCancelText: {
+    color: '#fff',
+    fontWeight: '500',
   },
 });
 

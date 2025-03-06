@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   Text,
   TouchableOpacity,
@@ -9,8 +9,10 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome5';
 import * as Speech from 'expo-speech'; // For Text-to-Speech
+import { useTextReader } from '../context/TextReaderContext';
 
 const TTSVoiceButton = () => {
+  const { getAllReadableText } = useTextReader();
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [status, setStatus] = useState('');
   const scaleAnim = useRef(new Animated.Value(1)).current; // scale animation
@@ -84,24 +86,30 @@ const TTSVoiceButton = () => {
     })
   ).current;
   
-  // TTS (Text to Speech) function
-  const activateTTS = () => {
+  // TTS (Text to Speech) function - memoize to prevent recreations
+  const activateTTS = useCallback(() => {
     if (isSpeaking) {
       // Stop speaking
       Speech.stop();
       setIsSpeaking(false);
       setStatus('');
     } else {
-      // Start speaking
+        // Get text from context
+      const textToRead = getAllReadableText();
+      
+      if (!textToRead || textToRead.trim() === '') {
+        setStatus('No readable text found');
+        setTimeout(() => setStatus(''), 2000);
+        return;
+      }
+      
       setStatus('Reading text...');
       setIsSpeaking(true);
       
-      const demoText = "Welcome to Lexera Life. I'm here to help you navigate your dyslexia journey.";
-      
-      Speech.speak(demoText, {
+      Speech.speak(textToRead, {
         language: 'en',
-        pitch: 1.0,
-        rate: 0.9, // Slightly slower for better comprehension
+        pitch: 1.1,
+        rate: 0.6, // Slightly slower for better comprehension
         onDone: () => {
           setIsSpeaking(false);
           setStatus('');
@@ -116,7 +124,7 @@ const TTSVoiceButton = () => {
         }
       });
     }
-  };
+  }, [isSpeaking, getAllReadableText]);
 
   return (
     <Animated.View
@@ -135,7 +143,7 @@ const TTSVoiceButton = () => {
       {status ? (
         <Animated.View
           style={[styles.statusBubble, {
-            opacity: isSpeaking ? 1 : 0,
+            opacity: status ? 1 : 0,
             transform: [{ translateY: -80 }]
           }]}
         >
@@ -212,4 +220,5 @@ const styles = StyleSheet.create({
   }
 });
 
-export default TTSVoiceButton;
+// Memoize the component to prevent unnecessary re-renders
+export default React.memo(TTSVoiceButton);

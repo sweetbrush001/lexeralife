@@ -16,6 +16,9 @@ import Icon from 'react-native-vector-icons/FontAwesome5';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { db } from '../../config/firebaseConfig';
+import TTSVoiceButton from '../../components/TTSVoiceButton';// Import TTS components
+import TextReaderRoot from '../../components/TextReaderRoot';
+import ReadableText from '../../components/ReadableText';
 
 const categories = [
   'App Features',
@@ -91,101 +94,135 @@ const FeedbackScreen = () => {
   };
 
   return (
-    <KeyboardAvoidingView 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
-    >
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity 
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-          >
-            <Icon name="arrow-left" size={20} color="#333" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Submit Feedback</Text>
-          <View style={styles.placeholder} />
-        </View>
-        
-        {/* Main Content */}
-        <View style={styles.content}>
-          <Text style={styles.sectionTitle}>How can we improve?</Text>
-          <Text style={styles.sectionSubtitle}>
-            Your feedback helps us make Lexera Life better for everyone.
-          </Text>
+    <TextReaderRoot>
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.container}
+      >
+        <ScrollView contentContainerStyle={styles.scrollContainer}>
+          {/* Header */}
+          <View style={styles.header}>
+            <TouchableOpacity 
+              style={styles.backButton}
+              onPress={() => navigation.goBack()}
+            >
+              <Icon name="arrow-left" size={20} color="#333" />
+            </TouchableOpacity>
+            {/* Screen title - readable with top priority */}
+            <ReadableText style={styles.headerTitle} readable={true} priority={1}>
+              Submit Feedback
+            </ReadableText>
+            <View style={styles.placeholder} />
+          </View>
           
-          {/* Category Selection */}
-          <Text style={styles.inputLabel}>Feedback Category</Text>
-          <View style={styles.categoriesContainer}>
-            {categories.map((category) => (
-              <TouchableOpacity 
-                key={category} 
-                style={[
-                  styles.categoryButton,
-                  selectedCategory === category && styles.selectedCategory
-                ]}
-                onPress={() => setSelectedCategory(category)}
-              >
-                <Text 
+          {/* Main Content */}
+          <View style={styles.content}>
+            {/* Main heading - readable with priority 2 */}
+            <ReadableText style={styles.sectionTitle} readable={true} priority={2}>
+              How can we improve?
+            </ReadableText>
+            
+            {/* Subheading - readable with priority 3 */}
+            <ReadableText style={styles.sectionSubtitle} readable={true} priority={3}>
+              Your feedback helps us make Lexera Life better for everyone.
+            </ReadableText>
+            
+            {/* Category Selection */}
+            <ReadableText style={styles.inputLabel} readable={true} priority={4}>
+              Feedback Category
+            </ReadableText>
+            
+            <View style={styles.categoriesContainer}>
+              {categories.map((category) => (
+                <TouchableOpacity 
+                  key={category} 
                   style={[
-                    styles.categoryText,
-                    selectedCategory === category && styles.selectedCategoryText
+                    styles.categoryButton,
+                    selectedCategory === category && styles.selectedCategory
                   ]}
+                  onPress={() => setSelectedCategory(category)}
                 >
-                  {category}
-                </Text>
-              </TouchableOpacity>
-            ))}
+                  {/* Categories aren't readable by default - only display them */}
+                  <Text 
+                    style={[
+                      styles.categoryText,
+                      selectedCategory === category && styles.selectedCategoryText
+                    ]}
+                  >
+                    {category}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            
+            {/* Display selected category if one is chosen - readable with priority 5 */}
+            {selectedCategory ? (
+              <ReadableText style={styles.selectedCategoryInfo} readable={true} priority={5}>
+                Selected category: {selectedCategory}
+              </ReadableText>
+            ) : null}
+            
+            {/* Rating */}
+            <ReadableText style={styles.inputLabel} readable={true} priority={6}>
+              Your Rating
+            </ReadableText>
+            
+            <View style={styles.ratingContainer}>
+              {[1, 2, 3, 4, 5].map((star) => (
+                <TouchableOpacity 
+                  key={star}
+                  onPress={() => setRating(star)}
+                  style={styles.starButton}
+                >
+                  <Icon 
+                    name={star <= rating ? "star" : "star"} 
+                    size={32} 
+                    color={star <= rating ? "#FFD700" : "#D3D3D3"} 
+                    solid={star <= rating}
+                  />
+                </TouchableOpacity>
+              ))}
+            </View>
+            
+            {/* Display selected rating if rated - readable with priority 7 */}
+            {rating > 0 ? (
+              <ReadableText style={styles.ratingInfo} readable={true} priority={7}>
+                Your rating: {rating} {rating === 1 ? 'star' : 'stars'}
+              </ReadableText>
+            ) : null}
+            
+            {/* Feedback Text */}
+            <ReadableText style={styles.inputLabel} readable={true} priority={8}>
+              Your Feedback
+            </ReadableText>
+            
+            <TextInput
+              style={styles.feedbackInput}
+              multiline
+              numberOfLines={6}
+              placeholder="Please share your thoughts, suggestions, or report issues..."
+              placeholderTextColor="#999"
+              value={feedbackText}
+              onChangeText={setFeedbackText}
+              textAlignVertical="top"
+            />
+            
+            {/* Submit Button */}
+            <TouchableOpacity 
+              style={styles.submitButton}
+              onPress={handleSubmit}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <ActivityIndicator color="#fff" size="small" />
+              ) : (
+                <Text style={styles.submitButtonText}>Submit Feedback</Text>
+              )}
+            </TouchableOpacity>
           </View>
-          
-          {/* Rating */}
-          <Text style={styles.inputLabel}>Your Rating</Text>
-          <View style={styles.ratingContainer}>
-            {[1, 2, 3, 4, 5].map((star) => (
-              <TouchableOpacity 
-                key={star}
-                onPress={() => setRating(star)}
-                style={styles.starButton}
-              >
-                <Icon 
-                  name={star <= rating ? "star" : "star"} 
-                  size={32} 
-                  color={star <= rating ? "#FFD700" : "#D3D3D3"} 
-                  solid={star <= rating}
-                />
-              </TouchableOpacity>
-            ))}
-          </View>
-          
-          {/* Feedback Text */}
-          <Text style={styles.inputLabel}>Your Feedback</Text>
-          <TextInput
-            style={styles.feedbackInput}
-            multiline
-            numberOfLines={6}
-            placeholder="Please share your thoughts, suggestions, or report issues..."
-            placeholderTextColor="#999"
-            value={feedbackText}
-            onChangeText={setFeedbackText}
-            textAlignVertical="top"
-          />
-          
-          {/* Submit Button */}
-          <TouchableOpacity 
-            style={styles.submitButton}
-            onPress={handleSubmit}
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? (
-              <ActivityIndicator color="#fff" size="small" />
-            ) : (
-              <Text style={styles.submitButtonText}>Submit Feedback</Text>
-            )}
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </TextReaderRoot>
   );
 };
 
@@ -261,12 +298,24 @@ const styles = StyleSheet.create({
     color: '#FF9999',
     fontWeight: '600',
   },
+  selectedCategoryInfo: {
+    fontSize: 14,
+    color: '#FF9999',
+    marginTop: 8,
+    fontWeight: '500',
+  },
   ratingContainer: {
     flexDirection: 'row',
     marginVertical: 16,
   },
   starButton: {
     marginRight: 12,
+  },
+  ratingInfo: {
+    fontSize: 14,
+    color: '#FFD700',
+    marginTop: 8,
+    fontWeight: '500',
   },
   feedbackInput: {
     backgroundColor: '#f9f9f9',

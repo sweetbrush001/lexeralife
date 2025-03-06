@@ -65,7 +65,7 @@ export default function AgeRangeSelector() {
   // Handle next button press - navigate to Home page
   const handleNextPress = () => {
     if (selectedAgeRange) {
-      navigation.replace('Home');
+      navigation.replace('Guide');
     }
   };
 

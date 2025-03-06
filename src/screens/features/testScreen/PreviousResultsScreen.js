@@ -17,7 +17,7 @@ import { auth, db } from "../../../config/firebaseConfig";
 import { collection, query, where, getDocs, deleteDoc, doc } from "firebase/firestore";
 import { LinearGradient } from "expo-linear-gradient";
 import { useTextStyle } from '../../../hooks/useTextStyle';
-import LoadingScreen from '../../../components/ui/LoadingScreen';
+import LoadingScreen from '../../../screens/loading/LoadingScreen';
 import OrbitLoader from '../../../components/ui/OrbitLoader';
 
 const { width } = Dimensions.get("window");
