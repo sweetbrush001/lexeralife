@@ -45,7 +45,10 @@
     "react-native-spinkit": "^1.5.1",
     "react-native-svg": "^15.8.0",
     "react-native-tts": "^4.1.1",
-    "react-native-vector-icons": "^10.2.0"
+    "react-native-vector-icons": "^10.2.0",
+    "expo-blur": "~14.0.3",
+    "expo-splash-screen": "~0.29.22",
+    "expo-haptics": "~14.0.1"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",

@@ -20,7 +20,6 @@ import { signInWithEmailAndPassword } from 'firebase/auth'; // Import signIn fun
 import AsyncStorage from '@react-native-async-storage/async-storage'; // Import AsyncStorage for persistence
 import { initializeAuth, getReactNativePersistence } from 'firebase/auth';
 import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage'; 
-import DraggableVoiceButton from '../../components/DraggableVoiceButton';       
 
 const { width } = Dimensions.get('window');
 
