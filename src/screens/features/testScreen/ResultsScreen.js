@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { 
   View, 
   Text, 
@@ -19,16 +19,50 @@ import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 
 const ResultsScreen = ({ route }) => {
-  // Same component implementation as before, only changing button colors
   const { answers } = route.params;
   const navigation = useNavigation();
   const user = auth.currentUser;
   const [isSaving, setIsSaving] = useState(true);
   const [showDetails, setShowDetails] = useState(false);
-  const textStyle = useTextStyle();
+  const rawTextStyle = useTextStyle();
   const fadeAnim = useState(new Animated.Value(0))[0];
   const slideAnim = useState(new Animated.Value(50))[0];
   const pulseAnim = useState(new Animated.Value(1))[0];
+
+  // Create optimized text styles for different UI components
+  const textStyle = useMemo(() => {
+    // Use only font family from settings, preserve other styles
+    const { fontFamily } = rawTextStyle;
+    return { fontFamily };
+  }, [rawTextStyle]);
+
+  // Style for headings that need to maintain specific sizes
+  const headingStyle = useMemo(() => ({
+    ...textStyle,
+  }), [textStyle]);
+
+  // Style for content text that can accommodate font changes
+  const contentStyle = useMemo(() => ({
+    ...textStyle,
+  }), [textStyle]);
+
+  // Style for percentage text which needs to maintain its impact
+  const percentageStyle = useMemo(() => ({
+    ...textStyle,
+  }), [textStyle]);
+
+  // Style for buttons to ensure they remain readable
+  const buttonTextStyle = useMemo(() => ({
+    ...textStyle,
+    color: "#fff", // Ensure button text remains white for contrast
+  }), [textStyle]);
+
+  // Create a special style for the details button text that doesn't force white color
+  const detailsButtonTextStyle = useMemo(() => {
+    // Only take the font family from settings, not the color
+    const { fontFamily } = textStyle;
+    return { fontFamily };
+  }, [textStyle]);
 
   useEffect(() => {
     // Animate in the content
@@ -137,18 +171,18 @@ const ResultsScreen = ({ route }) => {
     if (parseInt(percentage) >= 50) {
       return (
         <View style={styles.recommendationsContainer}>
-          <Text style={[styles.recommendationsTitle, textStyle]}>What to do next:</Text>
+          <Text style={[styles.recommendationsTitle, headingStyle]}>What to do next:</Text>
           <View style={styles.recommendationItem}>
             <FontAwesome5 name="user-md" size={20} color={colorScheme.main} />
-            <Text style={[styles.recommendationText, textStyle]}>Consult with an educational psychologist</Text>
+            <Text style={[styles.recommendationText, contentStyle]}>Consult with an educational psychologist</Text>
           </View>
           <View style={styles.recommendationItem}>
             <FontAwesome5 name="book-reader" size={20} color={colorScheme.main} />
-            <Text style={[styles.recommendationText, textStyle]}>Explore assistive reading technologies</Text>
+            <Text style={[styles.recommendationText, contentStyle]}>Explore assistive reading technologies</Text>
           </View>
           <View style={styles.recommendationItem}>
             <FontAwesome5 name="brain" size={20} color={colorScheme.main} />
-            <Text style={[styles.recommendationText, textStyle]}>Learn more about dyslexia management strategies</Text>
+            <Text style={[styles.recommendationText, contentStyle]}>Learn more about dyslexia management strategies</Text>
           </View>
         </View>
       );
@@ -184,7 +218,7 @@ const ResultsScreen = ({ route }) => {
             colors={['#6C63FF20', '#FFFFFF']}
             style={styles.cardGradient}
           />
-          <Text style={[styles.title, textStyle]}>Your Results</Text>
+          <Text style={[styles.title, headingStyle]}>Your Results</Text>
 
           <View style={styles.percentageContainer}>
             <Animated.View 
@@ -200,7 +234,7 @@ const ResultsScreen = ({ route }) => {
                 colors={[colorScheme.gradient[0] + '30', colorScheme.gradient[1] + '10']}
                 style={styles.percentageCircleInner}
               >
-                <Text style={[styles.percentageText, { color: colorScheme.main }, textStyle]}>{percentage}%</Text>
+                <Text style={[styles.percentageText, { color: colorScheme.main }, percentageStyle]}>{percentage}%</Text>
               </LinearGradient>
             </Animated.View>
             <View style={styles.resultCategoryContainer}>
@@ -210,12 +244,12 @@ const ResultsScreen = ({ route }) => {
                 end={{ x: 1, y: 0 }}
                 style={styles.resultCategoryBadge}
               >
-                <Text style={[styles.resultCategory, textStyle]}>{resultText}</Text>
+                <Text style={[styles.resultCategory, headingStyle]}>{resultText}</Text>
               </LinearGradient>
             </View>
           </View>
 
-          <Text style={[styles.resultText, textStyle]}>{detailedText}</Text>
+          <Text style={[styles.resultText, contentStyle]}>{detailedText}</Text>
 
           {renderRecommendations()}
 
@@ -227,7 +261,7 @@ const ResultsScreen = ({ route }) => {
               style={[
                 styles.detailsButtonText, 
                 showDetails && styles.detailsButtonTextActive,
-                textStyle
+                detailsButtonTextStyle // Use the special style that doesn't override the color
               ]}
             >
               {showDetails ? "Hide Test Details" : "Show Test Details"}
@@ -235,13 +269,13 @@ const ResultsScreen = ({ route }) => {
             <Ionicons 
               name={showDetails ? "chevron-up" : "chevron-down"} 
               size={24} 
-              color={showDetails ? "#FFFFFF" : "#6C63FF"} 
+              color={showDetails ? "#FFFFFF" : "#FF8500"} // Updated from "#6C63FF" to "#FF8500" to match text
             />
           </TouchableOpacity>
 
           {showDetails && (
             <View style={styles.answersContainer}>
-              <Text style={[styles.answersTitle, textStyle]}>Your Responses:</Text>
+              <Text style={[styles.answersTitle, headingStyle]}>Your Responses:</Text>
               {answers.map((answer, index) => (
                 <View key={index} style={styles.answerRow}>
                   <LinearGradient
@@ -254,7 +288,7 @@ const ResultsScreen = ({ route }) => {
                       color="#FFFFFF" 
                     />
                   </LinearGradient>
-                  <Text style={[styles.answerText, textStyle]}>
+                  <Text style={[styles.answerText, contentStyle]}>
                     Question {index + 1}: {answer ? "Yes" : "No"}
                   </Text>
                 </View>
@@ -265,7 +299,7 @@ const ResultsScreen = ({ route }) => {
           {isSaving ? (
             <View style={styles.savingContainer}>
               <ActivityIndicator size="large" color="#6C63FF" />
-              <Text style={[styles.savingText, textStyle]}>Saving your results...</Text>
+              <Text style={[styles.savingText, contentStyle]}>Saving your results...</Text>
             </View>
           ) : (
             <View style={styles.buttonContainer}>
@@ -281,7 +315,7 @@ const ResultsScreen = ({ route }) => {
                   style={styles.button}
                 >
                   <Ionicons name="time-outline" size={24} color="#fff" />
-                  <Text style={[styles.buttonText, textStyle]}>View History</Text>
+                  <Text style={[styles.buttonText, buttonTextStyle]}>View History</Text>
                 </LinearGradient>
               </TouchableOpacity>
 
@@ -297,7 +331,7 @@ const ResultsScreen = ({ route }) => {
                   style={styles.button}
                 >
                   <Ionicons name="home" size={24} color="#fff" />
-                  <Text style={[styles.buttonText, textStyle]}>Home</Text>
+                  <Text style={[styles.buttonText, buttonTextStyle]}>Home</Text>
                 </LinearGradient>
               </TouchableOpacity>
             </View>
@@ -305,7 +339,7 @@ const ResultsScreen = ({ route }) => {
 
           <View style={styles.disclaimerContainer}>
             <Ionicons name="information-circle-outline" size={20} color="#666" />
-            <Text style={[styles.disclaimerText, textStyle]}>
+            <Text style={[styles.disclaimerText, contentStyle]}>
               This screening tool provides an indication only and is not a clinical diagnosis.
             </Text>
           </View>
@@ -429,6 +463,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     borderWidth: 1,
     borderColor: "#E0E6FF",
+    flexShrink: 1,  // Allow container to shrink if needed
   },
   recommendationsTitle: {
     fontSize: 20,
@@ -438,7 +473,7 @@ const styles = StyleSheet.create({
   },
   recommendationItem: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",  // Changed from center to flex-start for better text alignment
     marginBottom: 14,
   },
   recommendationText: {
@@ -446,17 +481,20 @@ const styles = StyleSheet.create({
     marginLeft: 14,
     color: "#333",
     flex: 1,
+    flexWrap: 'wrap',  // Allow text to wrap
   },
   detailsButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 14,
+    paddingHorizontal: 20,  // Add horizontal padding
     marginVertical: 20,
     borderWidth: 1,
-    borderColor: "#6C63FF",
+    borderColor: "#FF8500", // Updated border color to match the orange theme
     borderRadius: 16,
     backgroundColor: "transparent",
+    minHeight: 52,  // Set minimum height
   },
   detailsButtonActive: {
     backgroundColor: '#FF8500',
@@ -464,7 +502,7 @@ const styles = StyleSheet.create({
   },
   detailsButtonText: {
     fontSize: 16,
-    color: "#6C63FF",
+    color: "#FF8500", // Changed from "#6C63FF" to orange to match other elements
     marginRight: 8,
     fontWeight: "600",
   },

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   View, 
   Text, 
@@ -13,25 +13,28 @@ import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { useTextStyle } from '../hooks/useTextStyle';
 
 const { width } = Dimensions.get('window');
 
-const FeatureCard = ({ icon, title, description, color }) => (
+// Fix: Ensure we're properly handling the case where fontStyle might be undefined
+const FeatureCard = ({ icon, title, description, color, fontStyle = {} }) => (
   <View style={[styles.featureCard, { backgroundColor: color }]}>
     <View style={styles.featureIconContainer}>
       <Ionicons name={icon} size={32} color="#FFFFFF" />
     </View>
-    <Text style={styles.featureCardTitle}>{title}</Text>
-    <Text style={styles.featureCardDescription}>{description}</Text>
+    <Text style={[styles.featureCardTitle, fontStyle]}>{title || ''}</Text>
+    <Text style={[styles.featureCardDescription, fontStyle]}>{description || ''}</Text>
   </View>
 );
 
-const TipItem = ({ tip, icon }) => (
+// Fix: Ensure we're properly handling the case where fontStyle might be undefined
+const TipItem = ({ tip, icon, fontStyle = {} }) => (
   <View style={styles.tipItem}>
     <View style={styles.tipIconBackground}>
       <Ionicons name={icon} size={22} color="#FFFFFF" />
     </View>
-    <Text style={styles.tipText}>{tip}</Text>
+    <Text style={[styles.tipText, fontStyle]}>{tip || ''}</Text>
   </View>
 );
 
@@ -39,12 +42,17 @@ const GuideScreen = () => {
   const navigation = useNavigation();
   const [imageLoading, setImageLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
+  
+  const textStyleSettings = useTextStyle();
+  const fontStyle = useMemo(() => {
+    const { fontFamily } = textStyleSettings || {};
+    return { fontFamily };
+  }, [textStyleSettings]);
 
   const handleContinue = () => {
     navigation.navigate('Home');
   };
 
-  // Better, more relevant images from Unsplash
   const headerImageUrl = "https://images.unsplash.com/photo-1580582932707-520aed937b7b?q=80&w=1332&auto=format&fit=crop";
   const galleryImages = [
     "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?q=80&w=1373&auto=format&fit=crop",
@@ -59,9 +67,9 @@ const GuideScreen = () => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.contentContainer}
       >
-        {/* Enhanced Header with Wave Background */}
+        {/* Enhanced Header with Orange Gradient */}
         <LinearGradient
-          colors={['#5E60CE', '#4A80F0']}
+          colors={['#FF9F9F', '#FF6B6B']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.headerGradient}
@@ -69,9 +77,11 @@ const GuideScreen = () => {
           <View style={styles.headerContent}>
             <View style={styles.logoContainer}>
               <Ionicons name="book" size={28} color="#FFFFFF" style={styles.logoIcon} />
-              <Text style={styles.title}>Lexera Life</Text>
+              {/* Fix: Ensure we're passing valid text */}
+              <Text style={[styles.title, fontStyle]}>{'Lexera Life'}</Text>
             </View>
-            <Text style={styles.subtitle}>Empowering your dyslexia journey</Text>
+            {/* Fix: Ensure we're passing valid text */}
+            <Text style={[styles.subtitle, fontStyle]}>{'Empowering your dyslexia journey'}</Text>
             
             <Image 
               source={{ uri: headerImageUrl }} 
@@ -94,62 +104,66 @@ const GuideScreen = () => {
             {imageError && (
               <View style={styles.errorContainer}>
                 <Ionicons name="image-outline" size={40} color="#FFFFFF" />
-                <Text style={styles.errorText}>Image not available</Text>
+                {/* Fix: Ensure we're passing valid text */}
+                <Text style={[styles.errorText, fontStyle]}>{'Image not available'}</Text>
               </View>
             )}
           </View>
           
-          {/* Curved bottom edge instead of wave image */}
           <View style={styles.curvedEdge} />
         </LinearGradient>
 
         {/* Welcome Section */}
         <View style={styles.welcomeSection}>
-          <Text style={styles.welcomeTitle}>Welcome to Lexera Life</Text>
-          <Text style={styles.welcomeDescription}>
-            Our app is thoughtfully designed to support your dyslexia journey through 
-            specialized tools, customizable features, and an inclusive learning environment.
+          {/* Fix: Ensure we're passing valid text */}
+          <Text style={[styles.welcomeTitle, fontStyle]}>{'Welcome to Lexera Life'}</Text>
+          <Text style={[styles.welcomeDescription, fontStyle]}>
+            {'Our app is thoughtfully designed to support your dyslexia journey through specialized tools, customizable features, and an inclusive learning environment.'}
           </Text>
         </View>
 
-        {/* Features Grid Section with improved colors */}
+        {/* Features Grid Section with improved orange colors */}
         <View style={styles.featuresSection}>
-          <Text style={styles.sectionTitle}>Our Features</Text>
+          <Text style={[styles.sectionTitle, fontStyle]}>{'Our Features'}</Text>
           
           <View style={styles.featuresGrid}>
             <FeatureCard 
               icon="game-controller" 
               title="Cognitive Games" 
               description="Improve reading through adaptive learning games"
-              color="#5E60CE"
+              color="#FF7F50"
+              fontStyle={fontStyle}
             />
             
             <FeatureCard 
               icon="chatbubble-ellipses" 
               title="AI Assistant" 
               description="Personalized reading & writing help"
-              color="#5390D9"
+              color="#FF8C61"
+              fontStyle={fontStyle}
             />
             
             <FeatureCard 
               icon="clipboard" 
               title="Assessments" 
               description="Track progress with personalized insights"
-              color="#4EA8DE"
+              color="#FF9F72"
+              fontStyle={fontStyle}
             />
             
             <FeatureCard 
               icon="people" 
               title="Community" 
               description="Connect with supportive peers"
-              color="#48BFE3"
+              color="#FFB183"
+              fontStyle={fontStyle}
             />
           </View>
         </View>
         
         {/* Enhanced Image Gallery with Cards */}
         <View style={styles.gallerySection}>
-          <Text style={styles.sectionTitle}>How We Support You</Text>
+          <Text style={[styles.sectionTitle, fontStyle]}>How We Support You</Text>
           
           <ScrollView 
             horizontal 
@@ -164,8 +178,8 @@ const GuideScreen = () => {
                 resizeMode="cover"
               />
               <View style={styles.galleryCardContent}>
-                <Text style={styles.galleryCardTitle}>Personalized Learning</Text>
-                <Text style={styles.galleryCardDescription}>Adaptive tools that grow with you</Text>
+                <Text style={[styles.galleryCardTitle, fontStyle]}>Personalized Learning</Text>
+                <Text style={[styles.galleryCardDescription, fontStyle]}>Adaptive tools that grow with you</Text>
               </View>
             </View>
             
@@ -176,8 +190,8 @@ const GuideScreen = () => {
                 resizeMode="cover"
               />
               <View style={styles.galleryCardContent}>
-                <Text style={styles.galleryCardTitle}>Reading Support</Text>
-                <Text style={styles.galleryCardDescription}>Tools that make text accessible</Text>
+                <Text style={[styles.galleryCardTitle, fontStyle]}>Reading Support</Text>
+                <Text style={[styles.galleryCardDescription, fontStyle]}>Tools that make text accessible</Text>
               </View>
             </View>
             
@@ -188,8 +202,8 @@ const GuideScreen = () => {
                 resizeMode="cover"
               />
               <View style={styles.galleryCardContent}>
-                <Text style={styles.galleryCardTitle}>Skill Building</Text>
-                <Text style={styles.galleryCardDescription}>Develop confidence through practice</Text>
+                <Text style={[styles.galleryCardTitle, fontStyle]}>Skill Building</Text>
+                <Text style={[styles.galleryCardDescription, fontStyle]}>Develop confidence through practice</Text>
               </View>
             </View>
           </ScrollView>
@@ -198,34 +212,38 @@ const GuideScreen = () => {
         {/* Enhanced Tips Card */}
         <View style={styles.tipsCard}>
           <LinearGradient
-            colors={['rgba(94, 96, 206, 0.15)', 'rgba(74, 128, 240, 0.05)']}
+            colors={['rgba(255, 159, 159, 0.15)', 'rgba(255, 107, 107, 0.05)']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.tipsGradient}
           >
             <View style={styles.tipsHeader}>
-              <Ionicons name="bulb" size={24} color="#5E60CE" />
-              <Text style={styles.tipsTitle}>Dyslexia-Friendly Design</Text>
+              <Ionicons name="bulb" size={24} color="#FF6B6B" />
+              <Text style={[styles.tipsTitle, fontStyle]}>Dyslexia-Friendly Design</Text>
             </View>
             
             <TipItem 
               icon="text" 
               tip="OpenDyslexic and other specialized fonts"
+              fontStyle={fontStyle}
             />
             
             <TipItem 
               icon="resize" 
               tip="Adjustable text size, spacing and line height"
+              fontStyle={fontStyle}
             />
             
             <TipItem 
               icon="color-palette" 
               tip="Customizable color themes to reduce visual stress"
+              fontStyle={fontStyle}
             />
             
             <TipItem 
               icon="headset" 
               tip="Text-to-speech with adjustable reading speed"
+              fontStyle={fontStyle}
             />
           </LinearGradient>
         </View>
@@ -233,17 +251,17 @@ const GuideScreen = () => {
         {/* Enhanced Testimonial Section */}
         <View style={styles.testimonialSection}>
           <View style={styles.testimonialCard}>
-            <Ionicons name="chatbox" size={24} color="#5E60CE" style={styles.quoteIcon} />
-            <Text style={styles.testimonialQuote}>
+            <Ionicons name="chatbox" size={24} color="#FF6B6B" style={styles.quoteIcon} />
+            <Text style={[styles.testimonialQuote, fontStyle]}>
               "Lexera Life has transformed how I interact with text. Reading feels so much more natural now, and I've gained confidence in school!"
             </Text>
             <View style={styles.testimonialAuthorContainer}>
-              <View style={styles.testimonialAvatar}>
-                <Text style={styles.testimonialAvatarText}>S</Text>
+              <View style={[styles.testimonialAvatar, {backgroundColor: '#FF6B6B'}]}>
+                <Text style={[styles.testimonialAvatarText, fontStyle]}>S</Text>
               </View>
               <View>
-                <Text style={styles.testimonialAuthorName}>Sarah</Text>
-                <Text style={styles.testimonialAuthorAge}>14 years old</Text>
+                <Text style={[styles.testimonialAuthorName, fontStyle]}>Sarah</Text>
+                <Text style={[styles.testimonialAuthorAge, fontStyle]}>14 years old</Text>
               </View>
             </View>
           </View>
@@ -258,12 +276,13 @@ const GuideScreen = () => {
           activeOpacity={0.9}
         >
           <LinearGradient
-            colors={['#5E60CE', '#4A80F0']}
+            colors={['#FF9F9F', '#FF6B6B']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={styles.continueButton}
           >
-            <Text style={styles.continueButtonText}>Start Your Journey</Text>
+            {/* Fix: Ensure we're passing valid text */}
+            <Text style={[styles.continueButtonText, fontStyle]}>{'Start Your Journey'}</Text>
             <View style={styles.arrowContainer}>
               <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
             </View>
@@ -496,7 +515,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#5E60CE',
+    backgroundColor: '#FF6B6B',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,

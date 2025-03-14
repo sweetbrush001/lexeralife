@@ -25,7 +25,8 @@ import LottieView from 'lottie-react-native';  // Import LottieView for animatio
 import { FadeIn, SlideInRight, SlideInDown, SlideOutDown } from 'react-native-reanimated';
 import LoadingScreen from '../../../screens/loading/LoadingScreen';
 import OrbitLoader from '../../../components/ui/OrbitLoader';
-
+// Import useTextStyle hook
+import { useTextStyle } from '../../../hooks/useTextStyle';
 
 const CommunityPage = ({ navigation }) => {
     const [posts, setPosts] = useState([]);
@@ -40,6 +41,13 @@ const CommunityPage = ({ navigation }) => {
     const [scrollY] = useState(new Animated.Value(0));
     
     const insets = useSafeAreaInsets();
+    
+    // Get text style settings and extract just the font family
+    const textStyleSettings = useTextStyle();
+    const fontStyle = useMemo(() => {
+        const { fontFamily } = textStyleSettings;
+        return { fontFamily };
+    }, [textStyleSettings]);
     
     // Animation for the floating action button
     const fabAnim = useRef(new Animated.Value(0)).current;
@@ -363,6 +371,28 @@ const CommunityPage = ({ navigation }) => {
         );
     };
 
+    // Add the missing safeTimeout utility function
+    const safeTimeout = useCallback((callback, delay) => {
+        if (!isMountedRef.current) return null;
+        
+        const timeoutId = setTimeout(() => {
+            if (isMountedRef.current) {
+                callback();
+            }
+        }, delay);
+        
+        return timeoutId;
+    }, []);
+    
+    // Add a mounted ref to track component lifecycle
+    const isMountedRef = useRef(true);
+    
+    useEffect(() => {
+        return () => {
+            isMountedRef.current = false;
+        };
+    }, []);
+
     const renderComment = (comment, postId) => (
         <Animated.View 
             style={[styles.commentItem, { opacity: new Animated.Value(1) }]} 
@@ -375,12 +405,12 @@ const CommunityPage = ({ navigation }) => {
                     style={styles.commentAvatar} 
                 />
                 <View style={styles.commentMeta}>
-                    <Text style={styles.commentAuthor}>{comment.author}</Text>
-                    <Text style={styles.commentTimestamp}>{formatTimestamp(comment.timestamp)}</Text>
+                    <Text style={[styles.commentAuthor, fontStyle]}>{comment.author}</Text>
+                    <Text style={[styles.commentTimestamp, fontStyle]}>{formatTimestamp(comment.timestamp)}</Text>
                 </View>
             </View>
             
-            <Text style={styles.commentText}>{comment.text}</Text>
+            <Text style={[styles.commentText, fontStyle]}>{comment.text}</Text>
             
             <View style={styles.commentActions}>
                 <TouchableOpacity 
@@ -398,7 +428,8 @@ const CommunityPage = ({ navigation }) => {
                     <Text 
                         style={[
                             styles.commentActionText,
-                            comment.likedUsers?.includes(auth.currentUser?.email) && styles.commentActionTextActive
+                            comment.likedUsers?.includes(auth.currentUser?.email) && styles.commentActionTextActive,
+                            fontStyle
                         ]}
                     >
                         {comment.likes || 0}
@@ -410,7 +441,7 @@ const CommunityPage = ({ navigation }) => {
                     onPress={() => setReplyToCommentId(replyToCommentId === comment.id ? null : comment.id)}
                 >
                     <Icon name="reply" size={14} color="#666" />
-                    <Text style={styles.commentActionText}>Reply</Text>
+                    <Text style={[styles.commentActionText, fontStyle]}>Reply</Text>
                 </TouchableOpacity>
                 
                 {comment.author === auth.currentUser?.email && (
@@ -419,7 +450,7 @@ const CommunityPage = ({ navigation }) => {
                         onPress={() => deleteComment(postId, comment.id)}
                     >
                         <Icon name="trash-alt" size={14} color="#FF3B30" />
-                        <Text style={[styles.commentActionText, {color: '#FF3B30'}]}>Delete</Text>
+                        <Text style={[styles.commentActionText, {color: '#FF3B30'}, fontStyle]}>Delete</Text>
                     </TouchableOpacity>
                 )}
             </View>
@@ -435,7 +466,7 @@ const CommunityPage = ({ navigation }) => {
                         style={styles.replyAvatar} 
                     />
                     <TextInput
-                        style={styles.replyInput}
+                        style={[styles.replyInput, fontStyle]}
                         placeholder="Reply to comment..."
                         value={commentTexts[postId] || ''}
                         onChangeText={(text) => setCommentTexts(prev => ({ ...prev, [postId]: text }))}
@@ -480,8 +511,8 @@ const CommunityPage = ({ navigation }) => {
                         style={styles.avatar}
                     />
                     <View style={styles.authorInfo}>
-                        <Text style={styles.postAuthor}>{item.author}</Text>
-                        <Text style={styles.postTimestamp}>{formatTimestamp(item.timestamp)}</Text>
+                        <Text style={[styles.postAuthor, fontStyle]}>{item.author}</Text>
+                        <Text style={[styles.postTimestamp, fontStyle]}>{formatTimestamp(item.timestamp)}</Text>
                     </View>
                     
                     <TouchableOpacity 
@@ -505,7 +536,7 @@ const CommunityPage = ({ navigation }) => {
                                     }}
                                 >
                                     <Icon name="trash-alt" size={16} color="#FF3B30" />
-                                    <Text style={[styles.optionText, { color: '#FF3B30' }]}>Delete</Text>
+                                    <Text style={[styles.optionText, { color: '#FF3B30' }, fontStyle]}>Delete</Text>
                                 </TouchableOpacity>
                             )}
                             
@@ -517,7 +548,7 @@ const CommunityPage = ({ navigation }) => {
                                 }}
                             >
                                 <Icon name="share" size={16} color="#007AFF" />
-                                <Text style={styles.optionText}>Share</Text>
+                                <Text style={[styles.optionText, fontStyle]}>Share</Text>
                             </TouchableOpacity>
                             
                             <TouchableOpacity 
@@ -527,27 +558,27 @@ const CommunityPage = ({ navigation }) => {
                                 }}
                             >
                                 <Icon name="flag" size={16} color="#FF9500" />
-                                <Text style={styles.optionText}>Report</Text>
+                                <Text style={[styles.optionText, fontStyle]}>Report</Text>
                             </TouchableOpacity>
                         </Animated.View>
                     )}
                 </View>
 
-                <Text style={styles.postTitle}>{item.title}</Text>
+                <Text style={[styles.postTitle, fontStyle]}>{item.title}</Text>
                 
                 <TouchableOpacity 
                     onPress={() => setExpandedPostId(isExpanded ? null : item.id)}
                     activeOpacity={0.8}
                 >
                     <Text 
-                        style={styles.postContent} 
+                        style={[styles.postContent, fontStyle]} 
                         numberOfLines={isExpanded ? undefined : 3}
                     >
                         {item.content}
                     </Text>
                     
                     {!isExpanded && item.content.length > 120 && (
-                        <Text style={styles.readMore}>Read more</Text>
+                        <Text style={[styles.readMore, fontStyle]}>Read more</Text>
                     )}
                 </TouchableOpacity>
 
@@ -567,12 +598,12 @@ const CommunityPage = ({ navigation }) => {
                 <View style={styles.interactionStats}>
                     <View style={styles.statItem}>
                         <Icon name="thumbs-up" size={14} color="#666" />
-                        <Text style={styles.statsText}>{item.likes}</Text>
+                        <Text style={[styles.statsText, fontStyle]}>{item.likes}</Text>
                     </View>
                     
                     <View style={styles.statItem}>
                         <Icon name="comment" size={14} color="#666" />
-                        <Text style={styles.statsText}>{item.comments?.length || 0}</Text>
+                        <Text style={[styles.statsText, fontStyle]}>{item.comments?.length || 0}</Text>
                     </View>
                 </View>
 
@@ -589,17 +620,22 @@ const CommunityPage = ({ navigation }) => {
                             color={isLiked ? "#0066FF" : "#666"} 
                             solid={isLiked}
                         />
-                        <Text style={[styles.interactionText, isLiked && styles.interactionTextActive]}>
+                        <Text style={[
+                            styles.interactionText, 
+                            isLiked && styles.interactionTextActive,
+                            fontStyle
+                        ]}>
                             {isLiked ? 'Liked' : 'Like'}
                         </Text>
                     </TouchableOpacity>
 
+                    {/* Fix broken TouchableOpacity structure */}
                     <TouchableOpacity
                         style={styles.interactionButton}
                         onPress={() => setExpandedPostId(isExpanded ? null : item.id)}
                     >
                         <Icon name="comment" size={16} color="#666" />
-                        <Text style={styles.interactionText}>Comment</Text>
+                        <Text style={[styles.interactionText, fontStyle]}>Comment</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
@@ -607,7 +643,7 @@ const CommunityPage = ({ navigation }) => {
                         onPress={() => handleShare(item)}
                     >
                         <Icon name="share" size={16} color="#666" />
-                        <Text style={styles.interactionText}>Share</Text>
+                        <Text style={[styles.interactionText, fontStyle]}>Share</Text>
                     </TouchableOpacity>
                 </View>
 
@@ -623,7 +659,7 @@ const CommunityPage = ({ navigation }) => {
                             />
                             <View style={styles.commentInputContainer}>
                                 <TextInput
-                                    style={styles.commentInput}
+                                    style={[styles.commentInput, fontStyle]}
                                     placeholder="Add a comment..."
                                     value={commentTexts[item.id] || ''}
                                     onChangeText={(text) => setCommentTexts(prev => ({ ...prev, [item.id]: text }))}
@@ -648,8 +684,8 @@ const CommunityPage = ({ navigation }) => {
                             ) : (
                                 <View style={styles.noCommentsContainer}>
                                     <Icon name="comments" size={40} color="#ddd" />
-                                    <Text style={styles.noCommentsText}>No comments yet</Text>
-                                    <Text style={styles.noCommentsSubtext}>Be the first to comment</Text>
+                                    <Text style={[styles.noCommentsText, fontStyle]}>No comments yet</Text>
+                                    <Text style={[styles.noCommentsSubtext, fontStyle]}>Be the first to comment</Text>
                                 </View>
                             )}
                         </View>
@@ -667,7 +703,7 @@ const CommunityPage = ({ navigation }) => {
                 <TouchableOpacity onPress={() => navigation.goBack()}>
                     <Icon name="arrow-left" size={20} color="#333" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Community</Text>
+                <Text style={[styles.headerTitle, fontStyle]}>Community</Text>
                 <TouchableOpacity onPress={() => setSearchVisible(!searchVisible)}>
                     <Icon name="search" size={20} color="#333" />
                 </TouchableOpacity>
@@ -685,7 +721,7 @@ const CommunityPage = ({ navigation }) => {
             >
                 <Icon name="search" size={16} color="#999" style={styles.searchIcon} />
                 <TextInput
-                    style={styles.searchInput}
+                    style={[styles.searchInput, fontStyle]}
                     placeholder="Search posts..."
                     value={searchQuery}
                     onChangeText={setSearchQuery}
@@ -734,7 +770,7 @@ const CommunityPage = ({ navigation }) => {
                         loadingMore ? (
                             <View style={styles.loadingMoreContainer}>
                                 <OrbitLoader size={30} color="#666" />
-                                <Text style={styles.loadingMoreText}>Loading more posts...</Text>
+                                <Text style={[styles.loadingMoreText, fontStyle]}>Loading more posts...</Text>
                             </View>
                         ) : null
                     }
@@ -746,14 +782,14 @@ const CommunityPage = ({ navigation }) => {
                                 loop
                                 style={{ width: 150, height: 150 }}
                             />
-                            <Text style={styles.emptyText}>
+                            <Text style={[styles.emptyText, fontStyle]}>
                                 {searchQuery ? 'No posts match your search' : 'No posts yet'}
                             </Text>
                             <TouchableOpacity
                                 style={styles.emptyButton}
                                 onPress={() => (searchQuery ? setSearchQuery('') : navigation.navigate('CreatePost'))}
                             >
-                                <Text style={styles.emptyButtonText}>
+                                <Text style={[styles.emptyButtonText, fontStyle]}>
                                     {searchQuery ? 'Clear Search' : 'Create the first post'}
                                 </Text>
                             </TouchableOpacity>

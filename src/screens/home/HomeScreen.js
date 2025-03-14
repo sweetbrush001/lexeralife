@@ -25,6 +25,8 @@ import SidePanel from '../../components/SidePanel';
 import { useFirebaseData, useUserData } from '../../hooks/useFirebaseData';
 // Import ProfileImage component
 import ProfileImage from '../../components/ProfileImage';
+// Import useTextStyle hook for applying text styling from settings
+import { useTextStyle } from '../../hooks/useTextStyle';
 
 // Modern icon libraries
 import { Feather } from '@expo/vector-icons';
@@ -37,6 +39,9 @@ const HomeScreen = () => {
   const navigation = useNavigation();
   const [currentTextIndex, setCurrentTextIndex] = useState(0);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
+  
+  // Get text style settings from the settings page
+  const textStyle = useTextStyle();
 
   // Animation value for side panel
   const slideAnim = useRef(new Animated.Value(-PANEL_WIDTH)).current;
@@ -157,6 +162,17 @@ const HomeScreen = () => {
     return userData.photoURL ? { uri: userData.photoURL } : null;
   }, [userData]);
 
+  // Combine the message style with the text style from settings
+  const motivationalTextStyle = useMemo(() => {
+    return {
+      ...styles.messageText,
+      ...textStyle,
+      color: '#fff', // Keep text white for contrast on gradient background
+      paddingTop: 10, // Add padding to the text itself to prevent cut-off
+      marginTop: 5, // Add some margin as well for better spacing
+    };
+  }, [textStyle]);
+
   return (
     <TextReaderRoot>
       <SafeAreaView style={styles.container}>
@@ -216,7 +232,7 @@ const HomeScreen = () => {
           {textsLoading ? (
             <ActivityIndicator color="#FFFFFF" size="small" />
           ) : (
-            <ReadableText style={styles.messageText} readable={true} priority={3}>
+            <ReadableText style={motivationalTextStyle} readable={true} priority={3}>
               {currentMotivationalText}
             </ReadableText>
           )}
@@ -395,13 +411,15 @@ const styles = StyleSheet.create({
   messageCard: {
     marginHorizontal: 20,
     borderRadius: 20,
-    padding: 25,
+    paddingTop: 35, // Increased top padding to prevent text from being cut off
+    paddingBottom: 25,
+    paddingHorizontal: 25,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 10,
     elevation: 5,
-    minHeight: 120,
+    minHeight: 140, // Increase minimum height to accommodate text with padding
     position: 'relative',
   },
   messageText: {

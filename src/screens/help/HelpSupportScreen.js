@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -14,10 +14,19 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import { MaterialIcons } from '@expo/vector-icons';
+// Import useTextStyle hook
+import { useTextStyle } from '../../hooks/useTextStyle';
 
 const HelpSupportScreen = ({ navigation }) => {
   // State for expanded FAQ items
   const [expandedFAQs, setExpandedFAQs] = useState({});
+  
+  // Get text style settings and extract just the font family
+  const textStyleSettings = useTextStyle();
+  const fontStyle = useMemo(() => {
+    const { fontFamily } = textStyleSettings;
+    return { fontFamily };
+  }, [textStyleSettings]);
 
   // FAQ data
   const faqs = [
@@ -127,7 +136,7 @@ const HelpSupportScreen = ({ navigation }) => {
         >
           <Feather name="arrow-left" size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Help & Support</Text>
+        <Text style={[styles.headerTitle, fontStyle]}>Help & Support</Text>
         <View style={styles.headerRight} />
       </LinearGradient>
 
@@ -137,7 +146,7 @@ const HelpSupportScreen = ({ navigation }) => {
         contentContainerStyle={styles.contentContainer}
       >
         {/* Support Options */}
-        <Text style={styles.sectionTitle}>How can we help you?</Text>
+        <Text style={[styles.sectionTitle, fontStyle]}>How can we help you?</Text>
         <View style={styles.supportGrid}>
           {supportOptions.map(option => (
             <TouchableOpacity 
@@ -149,14 +158,14 @@ const HelpSupportScreen = ({ navigation }) => {
               <View style={styles.supportIconContainer}>
                 <Feather name={option.icon} size={22} color="#FF6B6B" />
               </View>
-              <Text style={styles.supportTitle}>{option.title}</Text>
-              <Text style={styles.supportDescription}>{option.description}</Text>
+              <Text style={[styles.supportTitle, fontStyle]}>{option.title}</Text>
+              <Text style={[styles.supportDescription, fontStyle]}>{option.description}</Text>
             </TouchableOpacity>
           ))}
         </View>
 
         {/* FAQ Section */}
-        <Text style={styles.sectionTitle}>Frequently Asked Questions</Text>
+        <Text style={[styles.sectionTitle, fontStyle]}>Frequently Asked Questions</Text>
         <View style={styles.faqContainer}>
           {faqs.map(faq => (
             <TouchableOpacity 
@@ -169,7 +178,7 @@ const HelpSupportScreen = ({ navigation }) => {
               activeOpacity={0.8}
             >
               <View style={styles.faqHeader}>
-                <Text style={styles.faqQuestion}>{faq.question}</Text>
+                <Text style={[styles.faqQuestion, fontStyle]}>{faq.question}</Text>
                 <Feather 
                   name={expandedFAQs[faq.id] ? "chevron-up" : "chevron-down"} 
                   size={20} 
@@ -178,14 +187,14 @@ const HelpSupportScreen = ({ navigation }) => {
               </View>
               
               {expandedFAQs[faq.id] && (
-                <Text style={styles.faqAnswer}>{faq.answer}</Text>
+                <Text style={[styles.faqAnswer, fontStyle]}>{faq.answer}</Text>
               )}
             </TouchableOpacity>
           ))}
         </View>
         
         {/* Video Tutorials - Now using online images */}
-        <Text style={styles.sectionTitle}>Video Tutorials</Text>
+        <Text style={[styles.sectionTitle, fontStyle]}>Video Tutorials</Text>
         <View style={styles.videoSection}>
           {videoTutorials.map(tutorial => (
             <TouchableOpacity 
@@ -202,7 +211,7 @@ const HelpSupportScreen = ({ navigation }) => {
                   <Feather name="play" size={24} color="#fff" />
                 </View>
               </View>
-              <Text style={styles.videoTitle}>{tutorial.title}</Text>
+              <Text style={[styles.videoTitle, fontStyle]}>{tutorial.title}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -214,25 +223,25 @@ const HelpSupportScreen = ({ navigation }) => {
             style={styles.communityImage}
           />
           <MaterialIcons name="people" size={36} color="#FF6B6B" />
-          <Text style={styles.communityTitle}>Join Our Community</Text>
-          <Text style={styles.communityText}>
+          <Text style={[styles.communityTitle, fontStyle]}>Join Our Community</Text>
+          <Text style={[styles.communityText, fontStyle]}>
             Connect with others, share experiences, and get advice from the Lexera Life community.
           </Text>
           <TouchableOpacity 
             style={styles.communityButton}
             onPress={() => navigation.navigate('Community')}
           >
-            <Text style={styles.communityButtonText}>Open Community</Text>
+            <Text style={[styles.communityButtonText, fontStyle]}>Open Community</Text>
             <Feather name="arrow-right" size={18} color="#fff" />
           </TouchableOpacity>
         </View>
         
         {/* Contact Info */}
         <View style={styles.contactSection}>
-          <Text style={styles.contactText}>
+          <Text style={[styles.contactText, fontStyle]}>
             Need more help? Contact us directly at{' '}
             <Text 
-              style={styles.emailLink}
+              style={[styles.emailLink, fontStyle]}
               onPress={() => Linking.openURL('mailto:help@lexeralife.com')}
             >
               help@lexeralife.com

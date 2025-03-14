@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -21,6 +21,8 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import Icon from 'react-native-vector-icons/FontAwesome5';
 import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+// Import useTextStyle hook
+import { useTextStyle } from '../../../hooks/useTextStyle';
 
 const CreatePost = ({ navigation }) => {
   const [title, setTitle] = useState('');
@@ -32,6 +34,13 @@ const CreatePost = ({ navigation }) => {
     displayName: 'Anonymous',
     photoURL: null
   });
+  
+  // Get text style settings and extract just the font family
+  const textStyleSettings = useTextStyle();
+  const fontStyle = useMemo(() => {
+    const { fontFamily } = textStyleSettings;
+    return { fontFamily };
+  }, [textStyleSettings]);
   
   const contentInputRef = useRef(null);
   const insets = useSafeAreaInsets();
@@ -185,7 +194,7 @@ const CreatePost = ({ navigation }) => {
         >
           <Icon name="arrow-left" size={20} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Create Post</Text>
+        <Text style={[styles.headerTitle, fontStyle]}>Create Post</Text>
         <TouchableOpacity 
           style={[
             styles.postButton, 
@@ -197,7 +206,7 @@ const CreatePost = ({ navigation }) => {
           {submitting ? (
             <ActivityIndicator size="small" color="#fff" />
           ) : (
-            <Text style={styles.postButtonText}>Publish</Text>
+            <Text style={[styles.postButtonText, fontStyle]}>Publish</Text>
           )}
         </TouchableOpacity>
       </Animated.View>
@@ -226,12 +235,12 @@ const CreatePost = ({ navigation }) => {
               }} 
               style={styles.userAvatar} 
             />
-            <Text style={styles.userName}>{currentUser.displayName}</Text>
+            <Text style={[styles.userName, fontStyle]}>{currentUser.displayName}</Text>
           </Animated.View>
           
           <Animated.View style={{ opacity: fadeAnim }}>
             <TextInput 
-              style={styles.titleInput} 
+              style={[styles.titleInput, fontStyle]} 
               placeholder="Write an engaging title..." 
               placeholderTextColor="#999"
               value={title} 
@@ -243,7 +252,7 @@ const CreatePost = ({ navigation }) => {
             
             <TextInput 
               ref={contentInputRef}
-              style={styles.contentInput} 
+              style={[styles.contentInput, fontStyle]} 
               placeholder="Share your thoughts..." 
               placeholderTextColor="#999"
               value={content} 
@@ -253,7 +262,7 @@ const CreatePost = ({ navigation }) => {
               maxLength={2000}
             />
             
-            <Text style={styles.charCounter}>
+            <Text style={[styles.charCounter, fontStyle]}>
               {charCount}/2000 characters
             </Text>
             
@@ -290,17 +299,17 @@ const CreatePost = ({ navigation }) => {
           onPress={pickImage}
         >
           <Icon name="image" size={20} color="#0066FF" />
-          <Text style={styles.toolbarText}>Add Image</Text>
+          <Text style={[styles.toolbarText, fontStyle]}>Add Image</Text>
         </TouchableOpacity>
         
         <TouchableOpacity style={styles.toolbarButton}>
           <Icon name="poll" size={20} color="#0066FF" />
-          <Text style={styles.toolbarText}>Create Poll</Text>
+          <Text style={[styles.toolbarText, fontStyle]}>Create Poll</Text>
         </TouchableOpacity>
         
         <TouchableOpacity style={styles.toolbarButton}>
           <Icon name="map-marker-alt" size={20} color="#0066FF" />
-          <Text style={styles.toolbarText}>Add Location</Text>
+          <Text style={[styles.toolbarText, fontStyle]}>Add Location</Text>
         </TouchableOpacity>
       </Animated.View>
     </SafeAreaView>

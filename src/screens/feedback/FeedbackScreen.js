@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -16,9 +16,11 @@ import Icon from 'react-native-vector-icons/FontAwesome5';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { db } from '../../config/firebaseConfig';
-import TTSVoiceButton from '../../components/TTSVoiceButton';// Import TTS components
+import TTSVoiceButton from '../../components/TTSVoiceButton';
 import TextReaderRoot from '../../components/TextReaderRoot';
 import ReadableText from '../../components/ReadableText';
+// Import useTextStyle hook
+import { useTextStyle } from '../../hooks/useTextStyle';
 
 const categories = [
   'App Features',
@@ -35,6 +37,13 @@ const FeedbackScreen = () => {
   const [feedbackText, setFeedbackText] = useState('');
   const [rating, setRating] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Get text style settings and extract just the font family
+  const textStyleSettings = useTextStyle();
+  const fontStyle = useMemo(() => {
+    const { fontFamily } = textStyleSettings;
+    return { fontFamily };
+  }, [textStyleSettings]);
 
   const handleSubmit = async () => {
     // Validate form
@@ -142,11 +151,12 @@ const FeedbackScreen = () => {
                   ]}
                   onPress={() => setSelectedCategory(category)}
                 >
-                  {/* Categories aren't readable by default - only display them */}
+                  {/* Apply font style to category text */}
                   <Text 
                     style={[
                       styles.categoryText,
-                      selectedCategory === category && styles.selectedCategoryText
+                      selectedCategory === category && styles.selectedCategoryText,
+                      fontStyle
                     ]}
                   >
                     {category}
@@ -197,7 +207,7 @@ const FeedbackScreen = () => {
             </ReadableText>
             
             <TextInput
-              style={styles.feedbackInput}
+              style={[styles.feedbackInput, fontStyle]}
               multiline
               numberOfLines={6}
               placeholder="Please share your thoughts, suggestions, or report issues..."
@@ -216,7 +226,7 @@ const FeedbackScreen = () => {
               {isSubmitting ? (
                 <ActivityIndicator color="#fff" size="small" />
               ) : (
-                <Text style={styles.submitButtonText}>Submit Feedback</Text>
+                <Text style={[styles.submitButtonText, fontStyle]}>Submit Feedback</Text>
               )}
             </TouchableOpacity>
           </View>
