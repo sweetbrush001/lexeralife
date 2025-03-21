@@ -308,8 +308,8 @@ const DSpellingGame = ({ onBackToHome }) => {
     const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     const extraLetters = [];
 
-    // Make total letters between 12-15 (word letters + extra letters)
-    const totalLetters = Math.min(15, Math.max(12, uppercaseWordLetters.length * 2));
+    // Always use exactly 15 letters total
+    const totalLetters = 15;
     const extraLetterCount = Math.max(0, totalLetters - uppercaseWordLetters.length);
 
     // Keep track of letter frequencies to balance distribution
@@ -420,48 +420,47 @@ const DSpellingGame = ({ onBackToHome }) => {
     const letterWidth = 40;
     const letterHeight = 40;
 
-    // Add padding to ensure letters don't touch the container edges
-    const padding = 15;
+    // Add strict padding to keep letters away from the edges
+    const padding = 25;
     
-    // Get available space
-    const availableWidth = letterPlaygroundLayout.width - (padding * 2);
-    const availableHeight = letterPlaygroundLayout.height - (padding * 2);
+    // Get container dimensions
+    const containerWidth = letterPlaygroundLayout.width;
+    const containerHeight = letterPlaygroundLayout.height || 210;
+
+    // Calculate usable area
+    const usableWidth = containerWidth - (padding * 2);
+    const usableHeight = containerHeight - (padding * 2);
     
-    // Calculate how many letters we can fit per row (with spacing between them)
-    const spacing = 20; // Space between letters
-    const effectiveLetterWidth = letterWidth + spacing;
-    const effectiveLetterHeight = letterHeight + spacing;
+    // For 15 letters, use 5 columns for optimal layout
+    const maxColumns = 5;
+    const rows = Math.ceil(15 / maxColumns);
     
-    // Use a grid approach - calculate number of columns based on container width
-    const columns = Math.floor(availableWidth / effectiveLetterWidth);
+    // Calculate spacing between letters
+    const horizontalSpacing = usableWidth / maxColumns;
+    const verticalSpacing = usableHeight / rows;
     
-    // Ensure we have at least 3 columns or however many fit
-    const numColumns = Math.max(3, columns);
-    
-    // Place letters in a grid pattern with jitter
+    // Create updated letters array
     const updatedLetters = [];
     
-    // Create positions for each letter
     letters.forEach((letter, index) => {
-      // Calculate grid position
-      const col = index % numColumns;
-      const row = Math.floor(index / numColumns);
+      const col = index % maxColumns;
+      const row = Math.floor(index / maxColumns);
       
-      // Calculate base position
-      let baseX = padding + col * effectiveLetterWidth + effectiveLetterWidth/2;
-      let baseY = padding + row * effectiveLetterHeight + effectiveLetterHeight/2;
+      // Calculate base position with better centering
+      const x = padding + (col * horizontalSpacing) + (horizontalSpacing/2 - letterWidth/2);
+      const y = padding + (row * verticalSpacing) + (verticalSpacing/2 - letterHeight/2);
       
-      // Add slight randomness to position (jitter) but not too much to avoid overlaps
-      const jitterAmount = spacing / 2; // Half the spacing for jitter
-      const jitterX = (Math.random() - 0.5) * jitterAmount;
-      const jitterY = (Math.random() - 0.5) * jitterAmount;
+      // Apply small random offset for natural appearance (optional)
+      const jitterRange = 8; // Reduced jitter for more uniform spacing
+      const jitterX = (Math.random() - 0.5) * jitterRange;
+      const jitterY = (Math.random() - 0.5) * jitterRange;
       
-      // Final position with jitter
-      const x = baseX + jitterX;
-      const y = baseY + jitterY;
+      // Apply position with boundary enforcement
+      const newPosition = { 
+        x: Math.max(padding, Math.min(containerWidth - padding - letterWidth, x + jitterX)),
+        y: Math.max(padding, Math.min(containerHeight - padding - letterHeight, y + jitterY))
+      };
       
-      // Set letter position
-      const newPosition = { x, y };
       letter.position.setValue(newPosition);
       
       updatedLetters.push({
@@ -512,11 +511,18 @@ const DSpellingGame = ({ onBackToHome }) => {
           setLetters(updatedLetters);
         }
 
+        // Make the letter appear above all other elements when dragging
         letter.position.setOffset({
           x: letter.position.x._value,
           y: letter.position.y._value
         });
         letter.position.setValue({ x: 0, y: 0 });
+
+        // Mark this letter as being dragged to apply special styling
+        const updatedLetters = letters.map(l =>
+          l.id === letter.id ? { ...l, isDragging: true } : l
+        );
+        setLetters(updatedLetters);
       },
       onPanResponderMove: Animated.event(
         [null, { dx: letter.position.x, dy: letter.position.y }],
@@ -524,6 +530,12 @@ const DSpellingGame = ({ onBackToHome }) => {
       ),
       onPanResponderRelease: (e, gesture) => {
         letter.position.flattenOffset();
+
+        // Remove the dragging state
+        const updatedLetters = letters.map(l =>
+          l.id === letter.id ? { ...l, isDragging: false } : l
+        );
+        setLetters(updatedLetters);
 
         // Check if letter is dropped on a blank
         const droppedOnBlank = checkDropZone(letter, gesture);
@@ -1036,7 +1048,8 @@ const DSpellingGame = ({ onBackToHome }) => {
                 style={[
                   styles.letter,
                   { transform: letter.position.getTranslateTransform() },
-                  letter.used && styles.usedLetter
+                  letter.used && styles.usedLetter,
+                  letter.isDragging && styles.draggingLetter // Apply special style when dragging
                 ]}
                 {...panResponder.panHandlers}
               >
@@ -1254,22 +1267,24 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.4,
     shadowRadius: 5,
-    zIndex: 10,
+    zIndex: 10, // Increased z-index
     borderWidth: 2,
     borderColor: '#DDD5BE',
     // Add tap highlight effect
     touchAction: 'none',
   },
+  draggingLetter: {
+    zIndex: 1000, // Much higher z-index while dragging
+    elevation: 25, // Higher elevation for Android
+    shadowOpacity: 0.7, // More pronounced shadow
+    shadowRadius: 7,
+    backgroundColor: '#FFFFE0', // Slightly brighter to indicate dragging state
+    borderColor: '#FFD700', // Gold border when dragging
+  },
   usedLetter: {
     opacity: 0.8,
     backgroundColor: '#D4F5D4',
     borderColor: '#76C376',
-  },
-  letterText: {
-    fontSize: 20, // Reduced from 24
-    fontWeight: 'bold',
-    color: '#333',
-    fontFamily: 'OpenDyslexic-Bold',
   },
   gameOverContainer: {
     position: 'absolute',
@@ -1544,6 +1559,7 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 6,
     minHeight: 100, // Reduced height to make more room for letters
+    zIndex: 5, // Lower than letter z-index
   },
   letterContainerInner: {
     flexDirection: 'row',
@@ -1587,18 +1603,17 @@ const styles = StyleSheet.create({
     width: '94%',
     marginHorizontal: '3%',
     backgroundColor: 'rgba(0, 79, 113, 0.4)',
-    borderRadius: 30, // More rounded for oval appearance
-    padding: 10,
-    marginTop: 15, // Position closer to blanks
-    minHeight: 180, // Increase height to allow for better letter spacing
-    marginBottom: 80, // Space for control buttons
+    borderRadius: 20,
+    padding: 15,
+    marginTop: 15,
+    minHeight: 210, // Increased height to provide more vertical space
+    marginBottom: 80,
     position: 'relative',
-    // Add border to visualize the oval container
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.3)',
-    // Make the container slightly oval shaped
     aspectRatio: 1.8,
     alignSelf: 'center',
+    overflow: 'visible', // Changed from 'hidden' to allow letters to be visible outside container
   },
 });
 
