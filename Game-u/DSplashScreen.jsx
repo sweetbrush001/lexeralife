@@ -51,13 +51,6 @@ const DSplashScreen = ({ onFinish }) => {
       source={require('./assets/images/space_background.jpg')} 
       style={styles.container}
     >
-      {/* <View style={styles.overlay}>
-        <LottieView
-          ref={animation}
-          source={require('./assets/animations/owl.json')}
-          style={styles.animation}
-        />
-      </View> */}
           
       <Animated.View 
         style={[

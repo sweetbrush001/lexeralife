@@ -98,7 +98,12 @@ const DSpellingGame = ({ onBackToHome }) => {
     if (gameState === 'game') {
       // Initialize available words when game starts
       setAvailableWords([...GAME_DATA[difficulty]]);
-      setupGame();
+
+      // Add a slight delay to ensure availableWords is updated before setupGame is called
+      setTimeout(() => {
+        setupGame();
+      }, 100);
+
       playBackgroundMusic();
     }
 
@@ -138,7 +143,7 @@ const DSpellingGame = ({ onBackToHome }) => {
   };
 
   const setupGame = () => {
-    if (availableWords.length > 0) {
+    if (availableWords && availableWords.length > 0) {
       // Randomly select a word from available words
       const randomIndex = Math.floor(Math.random() * availableWords.length);
       const wordData = availableWords[randomIndex];
@@ -845,18 +850,6 @@ const DSpellingGame = ({ onBackToHome }) => {
             );
           })}
         </View>
-
-        {/* Game Complete Animation - same for all difficulties */}
-        {gameOver && (
-          <View style={styles.gameOverContainer}>
-            <LottieView
-              ref={animation}
-              source={require('./assets/animations/complete-game.json')}
-              style={styles.completeAnimation}
-              autoPlay
-            />
-          </View>
-        )}
 
         {/* Game Controls - same for all difficulties */}
         <View style={styles.gameControlsContainer}>

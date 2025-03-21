@@ -1,10 +1,10 @@
 "use client"
 
-import { useState } from "react"
-import { View, Text, TouchableOpacity, StyleSheet, Alert, ScrollView, TextInput } from "react-native"
-import * as ImagePicker from "expo-image-picker"
 import * as DocumentPicker from "expo-document-picker"
-import { uploadImage, uploadAudio, addWord } from "./utils/supabaseService"
+import * as ImagePicker from "expo-image-picker"
+import { useState } from "react"
+import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native"
+import { addWord, uploadAudio, uploadImage } from "./utils/supabaseService"
 
 export default function AdminScreen() {
   const [word, setWord] = useState("")
