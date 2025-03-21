@@ -1,2 +1,0 @@
-# lexeralife
- sdgp project
