@@ -168,6 +168,15 @@ const DSpellingGame = ({ onBackToHome }) => {
       const wordLetters = wordData.word.split('');
       const allLetters = generateLetterSet(wordLetters);
 
+      // Debug verification that all word letters are included
+      const wordSet = new Set(wordLetters.map(l => l.toUpperCase()));
+      const letterSet = new Set(allLetters.map(l => l.letter));
+      wordSet.forEach(letter => {
+        if (!letterSet.has(letter)) {
+          console.error(`Missing letter ${letter} from word ${wordData.word}`);
+        }
+      });
+
       // Create blank spaces for the word
       const blankSpaces = wordLetters.map((letter, index) => ({
         id: `blank-${index}`,
@@ -181,7 +190,7 @@ const DSpellingGame = ({ onBackToHome }) => {
       setTimeout(() => {
         positionLetters();
       }, 100);
-      
+
 
       // Update progress based on words used
       const totalWords = GAME_DATA[difficulty].length;
@@ -232,6 +241,15 @@ const DSpellingGame = ({ onBackToHome }) => {
     const wordLetters = wordData.word.split('');
     const allLetters = generateLetterSet(wordLetters);
 
+    // Debug verification that all word letters are included
+    const wordSet = new Set(wordLetters.map(l => l.toUpperCase()));
+    const letterSet = new Set(allLetters.map(l => l.letter));
+    wordSet.forEach(letter => {
+      if (!letterSet.has(letter)) {
+        console.error(`Missing letter ${letter} from word ${wordData.word}`);
+      }
+    });
+
     // Create blank spaces for the word
     const blankSpaces = wordLetters.map((letter, index) => ({
       id: `blank-${index}`,
@@ -245,7 +263,7 @@ const DSpellingGame = ({ onBackToHome }) => {
     setTimeout(() => {
       positionLetters();
     }, 100);
-    
+
 
     // Update progress based on words used
     const totalWords = GAME_DATA[difficulty].length;
@@ -262,46 +280,135 @@ const DSpellingGame = ({ onBackToHome }) => {
     }
   };
 
+  // Replace the entire generateLetterSet function (around line 282)
+  // Replace the entire generateLetterSet function (around line 292)
   const generateLetterSet = (wordLetters) => {
-    // Create letter objects for the word
-    const gridSize = 40; // Size of each letter bubble (smaller)
-    const padding = 8; // Padding between letters (smaller)
+    // Force uppercase for consistency
+    const uppercaseWordLetters = wordLetters.map(letter => letter.toUpperCase());
+    console.log("Word to spell:", uppercaseWordLetters.join(''));
 
-    // We'll use the letterPlaygroundLayout to position letters
-    const wordLetterObjects = wordLetters.map((letter, index) => {
-      return {
+    // Create required letter objects - one for EACH letter in the word
+    const wordLetterObjects = [];
+
+    // Important: Create each letter separately with unique IDs
+    uppercaseWordLetters.forEach((letter, index) => {
+      wordLetterObjects.push({
         id: `word-${index}`,
         letter: letter,
-        position: new Animated.ValueXY({ x: 0, y: 0 }), // Initial position will be set after layout
-        originalPosition: { x: 0, y: 0 }, // Will be set after layout
+        position: new Animated.ValueXY({ x: 0, y: 0 }),
+        originalPosition: { x: 0, y: 0 },
         inDropZone: false,
         used: false,
-      };
+      });
     });
 
-    // Add some extra random letters - ensure the same total letter count for each difficulty
-    const alphabet = 'abcdefghijklmnopqrstuvwxyz';
+    console.log("Created letters for word:", wordLetterObjects.map(l => l.letter).join(''));
+
+    // Add some extra random letters 
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     const extraLetters = [];
 
-    // Always make total letters equal 10 (word letters + extra letters = 10)
-    const totalLetters = 10;
-    const extraLetterCount = Math.max(0, totalLetters - wordLetters.length);
+    // Make total letters between 12-15 (word letters + extra letters)
+    const totalLetters = Math.min(15, Math.max(12, uppercaseWordLetters.length * 2));
+    const extraLetterCount = Math.max(0, totalLetters - uppercaseWordLetters.length);
 
+    // Keep track of letter frequencies to balance distribution
+    const letterCounts = {};
+    uppercaseWordLetters.forEach(letter => {
+      letterCounts[letter] = (letterCounts[letter] || 0) + 1;
+    });
+
+    // Add extra letters with some randomness
     for (let i = 0; i < extraLetterCount; i++) {
-      const randomLetter = alphabet[Math.floor(Math.random() * alphabet.length)];
+      let randomLetter;
+
+      // 30% chance to duplicate a letter from the word
+      if (Math.random() < 0.3 && uppercaseWordLetters.length > 0) {
+        // Get a random letter from the word
+        randomLetter = uppercaseWordLetters[Math.floor(Math.random() * uppercaseWordLetters.length)];
+      } else {
+        // Get a random letter from the alphabet, excluding letters that appear too frequently
+        let availableLetters = alphabet.split('').filter(letter =>
+          !letterCounts[letter] || letterCounts[letter] < 3
+        );
+
+        // Fallback to full alphabet if we've filtered too aggressively
+        if (availableLetters.length < 5) {
+          availableLetters = alphabet.split('');
+        }
+
+        randomLetter = availableLetters[Math.floor(Math.random() * availableLetters.length)];
+      }
+
+      // Update letter count
+      letterCounts[randomLetter] = (letterCounts[randomLetter] || 0) + 1;
 
       extraLetters.push({
         id: `extra-${i}`,
         letter: randomLetter,
-        position: new Animated.ValueXY({ x: 0, y: 0 }), // Initial position will be set after layout
-        originalPosition: { x: 0, y: 0 }, // Will be set after layout
+        position: new Animated.ValueXY({ x: 0, y: 0 }),
+        originalPosition: { x: 0, y: 0 },
         inDropZone: false,
         used: false,
       });
     }
 
-    // Combine and shuffle all letters
-    return [...wordLetterObjects, ...extraLetters].sort(() => Math.random() - 0.5);
+    // Combine word and extra letters
+    const allLetters = [...wordLetterObjects, ...extraLetters];
+
+    // Debug: Check that all required letters are present
+    const letterSet = new Set(allLetters.map(l => l.letter));
+    uppercaseWordLetters.forEach(letter => {
+      if (!letterSet.has(letter)) {
+        console.error(`ERROR: Letter '${letter}' is missing from generated set!`);
+      }
+    });
+
+    // Count required letters to ensure duplicates are handled correctly
+    const requiredLetterCount = {};
+    uppercaseWordLetters.forEach(letter => {
+      requiredLetterCount[letter] = (requiredLetterCount[letter] || 0) + 1;
+    });
+
+    // Count actual letters in the generated set
+    const actualLetterCount = {};
+    allLetters.forEach(letterObj => {
+      actualLetterCount[letterObj.letter] = (actualLetterCount[letterObj.letter] || 0) + 1;
+    });
+
+    // Make sure we have enough of each required letter
+    let needToAddLetters = false;
+    Object.keys(requiredLetterCount).forEach(letter => {
+      if (!actualLetterCount[letter] || actualLetterCount[letter] < requiredLetterCount[letter]) {
+        console.error(`ERROR: Not enough of letter '${letter}' - need ${requiredLetterCount[letter]}, have ${actualLetterCount[letter] || 0}`);
+        needToAddLetters = true;
+      }
+    });
+
+    // If we're missing any required letters, add them
+    if (needToAddLetters) {
+      Object.keys(requiredLetterCount).forEach(letter => {
+        const needed = requiredLetterCount[letter];
+        const have = actualLetterCount[letter] || 0;
+
+        // Add any missing letters
+        for (let i = have; i < needed; i++) {
+          allLetters.push({
+            id: `missing-${letter}-${i}`,
+            letter: letter,
+            position: new Animated.ValueXY({ x: 0, y: 0 }),
+            originalPosition: { x: 0, y: 0 },
+            inDropZone: false,
+            used: false,
+          });
+        }
+      });
+    }
+
+    console.log("Final letter set:", allLetters.map(l => l.letter).join(''));
+
+    // Shuffle and return
+    return allLetters.sort(() => Math.random() - 0.5);
   };
 
   // New function to position letters once playground is measured
@@ -310,29 +417,31 @@ const DSpellingGame = ({ onBackToHome }) => {
     if (!letterPlaygroundLayout.width) return;
 
     // Define letter size
-    const letterWidth = 45;
-    const letterHeight = 45;
+    const letterWidth = 40;
+    const letterHeight = 40;
 
-    // Define the playground boundaries with margins
-    const margin = 10;
+    // Define the playground boundaries
     const playgroundWidth = letterPlaygroundLayout.width;
     const playgroundHeight = letterPlaygroundLayout.height || 140;
+    
+    // Calculate oval center point
+    const centerX = playgroundWidth / 2;
+    const centerY = playgroundHeight / 2;
+    
+    // Calculate oval radius (slightly smaller than container to avoid edges)
+    const radiusX = (playgroundWidth / 2) - letterWidth;
+    const radiusY = (playgroundHeight / 2) - letterHeight;
 
-    // Create a new array with completely random positions
     const updatedLetters = [];
     const occupiedSpaces = [];
 
     // Function to check if position overlaps with existing letters
     const isOverlapping = (x, y) => {
-      // Minimum distance between letter centers to avoid overlap
       const minDistance = letterWidth + 5;
-
       for (const space of occupiedSpaces) {
         const dx = Math.abs(space.x - x);
         const dy = Math.abs(space.y - y);
-        // Calculate direct distance between centers
         const distance = Math.sqrt(dx * dx + dy * dy);
-
         if (distance < minDistance) {
           return true; // Overlapping
         }
@@ -347,18 +456,24 @@ const DSpellingGame = ({ onBackToHome }) => {
       const maxAttempts = 30;
 
       do {
-        // Generate random position within safe playground area
-        x = margin + Math.random() * (playgroundWidth - letterWidth - margin * 2);
-        y = margin + Math.random() * (playgroundHeight - letterHeight - margin * 2);
+        // Generate position within an oval shape
+        const angle = Math.random() * 2 * Math.PI;
+        const randomDistance = Math.random() * 0.8; // Use 0.8 to keep letters more toward center
+        
+        // Calculate position on the oval
+        x = centerX + radiusX * randomDistance * Math.cos(angle);
+        y = centerY + radiusY * randomDistance * Math.sin(angle);
+        
         attempts++;
 
         // Emergency exit if we can't find non-overlapping position
         if (attempts > maxAttempts) {
-          // Force position in a grid pattern as fallback
-          const row = Math.floor(occupiedSpaces.length / 3);
-          const col = occupiedSpaces.length % 3;
-          x = col * (letterWidth + 10) + margin * 2;
-          y = row * (letterHeight + 10) + margin * 2;
+          // Generate a spiral pattern position as fallback
+          const spiralIndex = occupiedSpaces.length;
+          const spiralAngle = spiralIndex * 0.5;
+          const spiralRadius = 10 + (spiralIndex * 2);
+          x = centerX + Math.cos(spiralAngle) * spiralRadius;
+          y = centerY + Math.sin(spiralAngle) * spiralRadius;
           break;
         }
       } while (isOverlapping(x, y));
@@ -1149,9 +1264,9 @@ const styles = StyleSheet.create({
   },
   letter: {
     position: 'absolute',
-    width: 45, // Reduced from 60
-    height: 45, // Reduced from 60
-    borderRadius: 25, // Reduced from 25
+    width: 40, // Reduced from 45
+    height: 40, // Reduced from 45
+    borderRadius: 20,
     backgroundColor: '#FFFDE7',
     justifyContent: 'center',
     alignItems: 'center',
@@ -1170,7 +1285,7 @@ const styles = StyleSheet.create({
     borderColor: '#76C376',
   },
   letterText: {
-    fontSize: 24, // Reduced from 30
+    fontSize: 20, // Reduced from 24
     fontWeight: 'bold',
     color: '#333',
     fontFamily: 'OpenDyslexic-Bold',
@@ -1387,13 +1502,13 @@ const styles = StyleSheet.create({
   },
   gameControlsContainer: {
     position: 'absolute',
-    bottom: 15, // Reduced from 20 to move controls up slightly
+    bottom: 10, // Move up slightly
     left: 0,
     right: 0,
     flexDirection: 'row',
     justifyContent: 'center',
     padding: 10,
-    zIndex: 20, // Added to ensure controls appear above other elements
+    zIndex: 20,
   },
   controlButton: {
     paddingVertical: 10,
@@ -1439,15 +1554,15 @@ const styles = StyleSheet.create({
     marginHorizontal: '3%',
     backgroundColor: 'rgba(0, 79, 113, 0.6)',
     borderRadius: 15,
-    padding: 20,
-    paddingVertical: 30,
+    padding: 15,
+    paddingVertical: 20,
     marginTop: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.3,
     shadowRadius: 5,
     elevation: 6,
-    minHeight: 120,
+    minHeight: 100, // Reduced height to make more room for letters
   },
   letterContainerInner: {
     flexDirection: 'row',
@@ -1456,24 +1571,24 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   blankContainer: {
-    width: 60,
-    height: 60,
+    width: 35,
+    height: 35,
     margin: 5,
     borderWidth: 2,
     borderColor: 'rgba(255, 255, 255, 0.7)',
-    borderRadius: 10,
+    borderRadius: 6,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(0, 150, 199, 0.3)',
   },
   blankText: {
     color: 'white',
-    fontSize: 36,
+    fontSize: 22,
     fontFamily: 'OpenDyslexic',
   },
   blankFilledText: {
     color: 'white',
-    fontSize: 32,
+    fontSize: 20,
     fontWeight: 'bold',
     fontFamily: 'OpenDyslexic-Bold',
   },
@@ -1491,12 +1606,18 @@ const styles = StyleSheet.create({
     width: '94%',
     marginHorizontal: '3%',
     backgroundColor: 'rgba(0, 79, 113, 0.4)',
-    borderRadius: 15,
+    borderRadius: 30, // More rounded for oval appearance
     padding: 10,
-    marginTop: 20,
-    minHeight: 140, // Reduced from 180
-    marginBottom: 100, // Increased from 80 to make room for controls
-    position: 'relative', // To position letter bubbles inside
+    marginTop: 15, // Position closer to blanks
+    minHeight: 150, // Height to create oval shape
+    marginBottom: 80, // Space for control buttons
+    position: 'relative',
+    // Add border to visualize the oval container
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    // Make the container slightly oval shaped
+    aspectRatio: 1.8,
+    alignSelf: 'center',
   },
 });
 
