@@ -96,13 +96,17 @@ const DSpellingGame = ({ onBackToHome }) => {
   // Initialize game when difficulty is selected
   useEffect(() => {
     if (gameState === 'game') {
-      // Initialize available words when game starts
-      setAvailableWords([...GAME_DATA[difficulty]]);
+      // Reset gameOver flag when starting a new game
+      setGameOver(false);
 
-      // Add a slight delay to ensure availableWords is updated before setupGame is called
+      // Important change: Use the game data directly in setupGame instead of relying on availableWords state
+      const wordsForThisDifficulty = [...GAME_DATA[difficulty]];
+
+      // Call a modified setupGame that uses the words directly
       setTimeout(() => {
-        setupGame();
-      }, 100);
+        // Pass the words directly to avoid state timing issues
+        setupGameWithWords(wordsForThisDifficulty);
+      }, 300);
 
       playBackgroundMusic();
     }
@@ -113,6 +117,7 @@ const DSpellingGame = ({ onBackToHome }) => {
       }
     };
   }, [difficulty, gameState]);
+
 
   // Check if word is complete to show submit button
   useEffect(() => {
@@ -173,6 +178,10 @@ const DSpellingGame = ({ onBackToHome }) => {
 
       setBlanks(blankSpaces);
       setLetters(allLetters);
+      setTimeout(() => {
+        positionLetters();
+      }, 100);
+      
 
       // Update progress based on words used
       const totalWords = GAME_DATA[difficulty].length;
@@ -189,6 +198,67 @@ const DSpellingGame = ({ onBackToHome }) => {
       }
     } else {
       endGame();
+    }
+  };
+
+  const setupGameWithWords = (words) => {
+    // Make sure we have words available
+    if (!words || words.length === 0) {
+      console.error("No words available for this difficulty!");
+      return;
+    }
+
+    // Set available words state for future reference
+    setAvailableWords(words);
+
+    // Randomly select a word from words parameter (not from state)
+    const randomIndex = Math.floor(Math.random() * words.length);
+    const wordData = words[randomIndex];
+
+    // Remove this word from words to prevent repetition
+    const updatedWords = [...words];
+    updatedWords.splice(randomIndex, 1);
+
+    // Update availableWords state with the remaining words
+    setAvailableWords(updatedWords);
+
+    // Continue with the rest of setupGame logic...
+    setCurrentWord(wordData.word);
+    setCurrentImage(wordData.image);
+    setCurrentHint(wordData.hint);
+    setRevealedHint('');
+
+    // Create letter objects with non-overlapping positions
+    const wordLetters = wordData.word.split('');
+    const allLetters = generateLetterSet(wordLetters);
+
+    // Create blank spaces for the word
+    const blankSpaces = wordLetters.map((letter, index) => ({
+      id: `blank-${index}`,
+      letter: letter,
+      filled: false,
+      filledWithLetterId: null,
+    }));
+
+    setBlanks(blankSpaces);
+    setLetters(allLetters);
+    setTimeout(() => {
+      positionLetters();
+    }, 100);
+    
+
+    // Update progress based on words used
+    const totalWords = GAME_DATA[difficulty].length;
+    const wordsCompleted = GAME_DATA[difficulty].length - updatedWords.length;
+    setProgress((wordsCompleted / totalWords) * 100);
+
+    // Speak the word
+    if (!isMuted) {
+      Speech.speak(wordData.word, {
+        language: 'en',
+        pitch: 1.0,
+        rate: 0.75,
+      });
     }
   };
 
@@ -235,45 +305,76 @@ const DSpellingGame = ({ onBackToHome }) => {
   };
 
   // New function to position letters once playground is measured
+  // Replace the existing positionLetters function with this implementation
   const positionLetters = () => {
     if (!letterPlaygroundLayout.width) return;
 
-    const letterWidth = 40; // Width of each letter bubble - reduced from 45
-    const letterHeight = 40; // Height of each letter bubble - reduced from 45
-    const horizontalPadding = 8; // Padding between letters horizontally - reduced from 10
-    const verticalPadding = 8; // Padding between letters vertically - reduced from 10
+    // Define letter size
+    const letterWidth = 45;
+    const letterHeight = 45;
 
-    // Calculate how many letters we can fit per row
-    const lettersPerRow = Math.floor((letterPlaygroundLayout.width) / (letterWidth + horizontalPadding));
+    // Define the playground boundaries with margins
+    const margin = 10;
+    const playgroundWidth = letterPlaygroundLayout.width;
+    const playgroundHeight = letterPlaygroundLayout.height || 140;
 
-    // Create a new array with updated positions
-    const updatedLetters = [...letters].map((letter, index) => {
-      // Calculate grid position
-      const row = Math.floor(index / lettersPerRow);
-      const col = index % lettersPerRow;
+    // Create a new array with completely random positions
+    const updatedLetters = [];
+    const occupiedSpaces = [];
 
-      // Calculate actual x and y coordinates
-      const x = (col * (letterWidth + horizontalPadding)) + horizontalPadding +
-        (letterPlaygroundLayout.width - (lettersPerRow * (letterWidth + horizontalPadding))) / 2;
-      const y = (row * (letterHeight + verticalPadding)) + verticalPadding;
+    // Function to check if position overlaps with existing letters
+    const isOverlapping = (x, y) => {
+      // Minimum distance between letter centers to avoid overlap
+      const minDistance = letterWidth + 5;
 
-      // Add some randomness to make it look scattered
-      const randomOffsetX = Math.random() * 10 - 5; // Reduced randomness
-      const randomOffsetY = Math.random() * 10 - 5; // Reduced randomness
+      for (const space of occupiedSpaces) {
+        const dx = Math.abs(space.x - x);
+        const dy = Math.abs(space.y - y);
+        // Calculate direct distance between centers
+        const distance = Math.sqrt(dx * dx + dy * dy);
 
-      const newPosition = {
-        x: x + randomOffsetX,
-        y: y + randomOffsetY
-      };
+        if (distance < minDistance) {
+          return true; // Overlapping
+        }
+      }
+      return false;
+    };
 
-      // Update the Animated.ValueXY with the new position
+    // Position each letter with collision detection
+    for (const letter of letters) {
+      let x, y;
+      let attempts = 0;
+      const maxAttempts = 30;
+
+      do {
+        // Generate random position within safe playground area
+        x = margin + Math.random() * (playgroundWidth - letterWidth - margin * 2);
+        y = margin + Math.random() * (playgroundHeight - letterHeight - margin * 2);
+        attempts++;
+
+        // Emergency exit if we can't find non-overlapping position
+        if (attempts > maxAttempts) {
+          // Force position in a grid pattern as fallback
+          const row = Math.floor(occupiedSpaces.length / 3);
+          const col = occupiedSpaces.length % 3;
+          x = col * (letterWidth + 10) + margin * 2;
+          y = row * (letterHeight + 10) + margin * 2;
+          break;
+        }
+      } while (isOverlapping(x, y));
+
+      // Save this position to check future overlaps
+      occupiedSpaces.push({ x, y });
+
+      // Set the new position
+      const newPosition = { x, y };
       letter.position.setValue(newPosition);
 
-      return {
+      updatedLetters.push({
         ...letter,
         originalPosition: newPosition
-      };
-    });
+      });
+    }
 
     setLetters(updatedLetters);
   };
