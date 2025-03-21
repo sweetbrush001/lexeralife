@@ -1112,7 +1112,7 @@ const handleWordComplete = () => {
                   >
                     {blank.filled ? (
                       <Text style={styles.blankFilledText}>
-                        {fillingLetter ? fillingLetter.letter : ''}
+                        {fillingLetter ? fillingLetter.letter.toUpperCase() : ''}
                       </Text>
                     ) : (
                       <Text style={styles.blankText}>_</Text>
@@ -1150,7 +1150,7 @@ const handleWordComplete = () => {
                   ]}
                   {...panResponder.panHandlers}
                 >
-                  <Text style={styles.letterText}>{letter.letter}</Text>
+                  <Text style={styles.letterText}>{letter.letter.toLowerCase()}</Text>
                 </Animated.View>
               );
             })}
