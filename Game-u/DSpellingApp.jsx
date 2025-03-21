@@ -72,6 +72,7 @@ const DSpellingGame = ({ onBackToHome }) => {
   const [droppedLetters, setDroppedLetters] = useState([]); // Store letters that have been placed in blanks
   const [letterPlaygroundLayout, setLetterPlaygroundLayout] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const [availableWords, setAvailableWords] = useState([]); // Add this state for tracking available words
+  const [blankPositions, setBlankPositions] = useState({}); // Add this state for tracking blank positions
 
   const animation = useRef(null);
   const correctAnimation = useRef(null);
@@ -155,6 +156,7 @@ const setupGame = () => {
     setBlanks([]);
     setDroppedLetters([]);
     setRevealedHint('');
+    setBlankPositions({}); // Reset blank positions
     
     // Randomly select a word from availableWords
     const randomIndex = Math.floor(Math.random() * availableWords.length);
@@ -237,6 +239,7 @@ const setupGameWithWords = (words) => {
   setBlanks([]);
   setDroppedLetters([]);
   setRevealedHint('');
+  setBlankPositions({}); // Reset blank positions
   
   // Set available words state for future reference
   setAvailableWords(words);
@@ -621,73 +624,112 @@ const fallbackLetterSet = (wordLetters) => {
   };
 
   // Update the checkDropZone function to add error handling
+// Removed duplicate declaration of checkDropZone to avoid redeclaration error
+
+// Update the checkDropZone function with a more robust approach
 const checkDropZone = (letter, gesture) => {
   try {
-    // Use simplified approach with fixed area for dropping
-    const dropAreaTop = 280;    // Reduced slightly to account for larger container
-    const dropAreaBottom = 500; // Increased to account for larger container
+    // Get the current position of the dragged letter
     const letterX = gesture.moveX;
     const letterY = gesture.moveY;
-
-    // Check if letter is within the general drop area
-    if (letterY >= dropAreaTop && letterY <= dropAreaBottom) {
-      // Find the first empty blank
-      const emptyBlank = blanks.find(blank => !blank.filled);
-
-      if (emptyBlank) {
-        // Update the blank
-        const updatedBlanks = blanks.map(b =>
-          b.id === emptyBlank.id
-            ? { ...b, filled: true, filledWithLetterId: letter.id }
-            : b
-        );
-
-        // Store dropped letter information
-        setDroppedLetters(prev => [
-          ...prev,
-          {
-            letterId: letter.id,
-            letter: letter.letter,
-            blankId: emptyBlank.id
-          }
-        ]);
-
-        // Update the letter
-        const updatedLetters = letters.map(l =>
-          l.id === letter.id
-            ? { ...l, used: true, inDropZone: true }
-            : l
-        );
-
-        // Instead of moving letter to blank position, return it to its original position
-        Animated.spring(letter.position, {
-          toValue: letter.originalPosition,
-          friction: 5,
-          useNativeDriver: false
-        }).start();
-
-        setBlanks(updatedBlanks);
-        setLetters(updatedLetters);
-
-        // Play sound and haptic feedback
-        if (!isMuted) {
-          playSound(SOUNDS.drop);
-        }
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-
-        // Check if all blanks are filled to enable submit
-        const allFilled = updatedBlanks.every(blank => blank.filled);
-        if (allFilled) {
-          // Auto-submit after a brief delay
-          setTimeout(() => {
-            checkAnswer();
-          }, 500);
-        }
-
-        return true;
+    
+    console.log("Letter dropped at:", letterX, letterY);
+    console.log("Available blanks:", Object.keys(blankPositions).length);
+    
+    // Find all empty blanks
+    const emptyBlanks = blanks.filter(blank => !blank.filled);
+    
+    if (emptyBlanks.length === 0) {
+      console.log("No empty blanks available");
+      return false;
+    }
+    
+    // Find the closest blank to the drop position
+    let closestBlank = null;
+    let shortestDistance = Infinity;
+    
+    for (const blank of emptyBlanks) {
+      const blankPos = blankPositions[blank.id];
+      
+      if (!blankPos) {
+        console.log(`No position data for blank ${blank.id}`);
+        continue;
+      }
+      
+      // Calculate distance from letter to blank center
+      // Using letterPlaygroundLayout as a reference point to convert to global coords
+      const blankCenterX = blankPos.globalX + (blankPos.width / 2);
+      const blankCenterY = blankPos.globalY + (blankPos.height / 2);
+      
+      const dx = letterX - blankCenterX;
+      const dy = letterY - blankCenterY;
+      const distance = Math.sqrt(dx*dx + dy*dy);
+      
+      console.log(`Blank ${blank.id}: distance=${distance}, pos=(${blankCenterX}, ${blankCenterY})`);
+      
+      if (distance < shortestDistance) {
+        shortestDistance = distance;
+        closestBlank = blank;
       }
     }
-
+    
+    // More forgiving distance check - using 300px to account for potential measurement issues
+    // We'll accept any drop that's reasonably close to a blank
+    if (closestBlank && shortestDistance < 300) {
+      console.log(`Dropping on blank ${closestBlank.id} with distance ${shortestDistance}`);
+      
+      // Update the blank state
+      const updatedBlanks = blanks.map(b => 
+        b.id === closestBlank.id ? 
+        { ...b, filled: true, filledWithLetterId: letter.id } : 
+        b
+      );
+      
+      // Add to dropped letters array
+      setDroppedLetters(prev => [
+        ...prev,
+        {
+          letterId: letter.id,
+          letter: letter.letter,
+          blankId: closestBlank.id
+        }
+      ]);
+      
+      // Update the letter state
+      const updatedLetters = letters.map(l => 
+        l.id === letter.id ? 
+        { ...l, used: true, inDropZone: true } : 
+        l
+      );
+      
+      // Return letter to its original position
+      Animated.spring(letter.position, {
+        toValue: letter.originalPosition,
+        friction: 5,
+        useNativeDriver: false
+      }).start();
+      
+      setBlanks(updatedBlanks);
+      setLetters(updatedLetters);
+      
+      // Play feedback
+      if (!isMuted) {
+        playSound(SOUNDS.drop);
+      }
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      
+      // Check if all blanks are filled
+      const allFilled = updatedBlanks.every(blank => blank.filled);
+      if (allFilled) {
+        setTimeout(() => {
+          checkAnswer();
+        }, 500);
+      }
+      
+      return true;
+    }
+    
+    console.log("No suitable blank found for dropping");
     return false;
   } catch (err) {
     console.log("Error in checkDropZone:", err);
@@ -809,6 +851,7 @@ const handleWordComplete = () => {
       setBlanks([]);
       setDroppedLetters([]);
       setRevealedHint('');
+      setBlankPositions({}); // Clear blank positions
       
       // Setup next word after a delay to ensure clean state
       setTimeout(() => {
@@ -1109,6 +1152,20 @@ const handleWordComplete = () => {
                       styles.blankContainer,
                       blank.filled ? styles.filledBlank : {}
                     ]}
+                    onLayout={(event) => {
+                      const { x, y, width, height } = event.nativeEvent.layout;
+                      // Update the position of this blank in our map
+                      event.target.measure((fx, fy, width, height, px, py) => {
+                        setBlankPositions(prev => ({
+                          ...prev,
+                          [blank.id]: { 
+                            x, y, width, height,  // Local coordinates
+                            globalX: px,          // Global X position on screen
+                            globalY: py           // Global Y position on screen
+                          }
+                        }));
+                      });
+                    }}
                   >
                     {blank.filled ? (
                       <Text style={styles.blankFilledText}>
