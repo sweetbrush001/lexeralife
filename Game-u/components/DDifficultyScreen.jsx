@@ -33,7 +33,6 @@ const DifficultyScreen = ({ onSelectDifficulty, onBack }) => {
               style={styles.difficultyIcon} 
             />
             <Text style={styles.difficultyText}>Easy</Text>
-            <Text style={styles.difficultyDescription}>3-4 letter words</Text>
           </TouchableOpacity>
           
           <TouchableOpacity 
@@ -45,7 +44,6 @@ const DifficultyScreen = ({ onSelectDifficulty, onBack }) => {
               style={styles.difficultyIcon} 
             />
             <Text style={styles.difficultyText}>Medium</Text>
-            <Text style={styles.difficultyDescription}>4-5 letter words</Text>
           </TouchableOpacity>
           
           <TouchableOpacity 

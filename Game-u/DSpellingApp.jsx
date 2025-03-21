@@ -147,109 +147,37 @@ const DSpellingGame = ({ onBackToHome }) => {
     }
   };
 
-  const setupGame = () => {
-    if (availableWords && availableWords.length > 0) {
-      // Randomly select a word from available words
-      const randomIndex = Math.floor(Math.random() * availableWords.length);
-      const wordData = availableWords[randomIndex];
+  // Completely rewrite the setupGame function to ensure letters are properly generated
+const setupGame = () => {
+  if (availableWords && availableWords.length > 0) {
+    // First, reset any existing letter state
+    setLetters([]);
+    setBlanks([]);
+    setDroppedLetters([]);
+    setRevealedHint('');
+    
+    // Randomly select a word from availableWords
+    const randomIndex = Math.floor(Math.random() * availableWords.length);
+    const wordData = availableWords[randomIndex];
 
-      // Remove this word from available words to prevent repetition
-      const updatedAvailableWords = [...availableWords];
-      updatedAvailableWords.splice(randomIndex, 1);
-      setAvailableWords(updatedAvailableWords);
+    // Remove this word from availableWords to prevent repetition
+    const updatedAvailableWords = [...availableWords];
+    updatedAvailableWords.splice(randomIndex, 1);
+    setAvailableWords(updatedAvailableWords);
 
-      // Set current word data
-      setCurrentWord(wordData.word);
-      setCurrentImage(wordData.image);
-      setCurrentHint(wordData.hint);
-      setRevealedHint('');
-
-      // Create letter objects with non-overlapping positions
-      const wordLetters = wordData.word.split('');
-      const allLetters = generateLetterSet(wordLetters);
-
-      // Debug verification that all word letters are included
-      const wordSet = new Set(wordLetters.map(l => l.toUpperCase()));
-      const letterSet = new Set(allLetters.map(l => l.letter));
-      wordSet.forEach(letter => {
-        if (!letterSet.has(letter)) {
-          console.error(`Missing letter ${letter} from word ${wordData.word}`);
-        }
-      });
-
-      // Create blank spaces for the word
-      const blankSpaces = wordLetters.map((letter, index) => ({
-        id: `blank-${index}`,
-        letter: letter,
-        filled: false,
-        filledWithLetterId: null,
-      }));
-
-      setBlanks(blankSpaces);
-      setLetters(allLetters);
-      setTimeout(() => {
-        positionLetters();
-      }, 100);
-
-
-      // Update progress based on words used
-      const totalWords = GAME_DATA[difficulty].length;
-      const wordsCompleted = GAME_DATA[difficulty].length - updatedAvailableWords.length;
-      setProgress((wordsCompleted / totalWords) * 100);
-
-      // Speak the word
-      if (!isMuted) {
-        Speech.speak(wordData.word, {
-          language: 'en',
-          pitch: 1.0,
-          rate: 0.75,
-        });
-      }
-    } else {
-      endGame();
-    }
-  };
-
-  const setupGameWithWords = (words) => {
-    // Make sure we have words available
-    if (!words || words.length === 0) {
-      console.error("No words available for this difficulty!");
-      return;
-    }
-
-    // Set available words state for future reference
-    setAvailableWords(words);
-
-    // Randomly select a word from words parameter (not from state)
-    const randomIndex = Math.floor(Math.random() * words.length);
-    const wordData = words[randomIndex];
-
-    // Remove this word from words to prevent repetition
-    const updatedWords = [...words];
-    updatedWords.splice(randomIndex, 1);
-
-    // Update availableWords state with the remaining words
-    setAvailableWords(updatedWords);
-
-    // Continue with the rest of setupGame logic...
+    // Set current word data
     setCurrentWord(wordData.word);
     setCurrentImage(wordData.image);
     setCurrentHint(wordData.hint);
-    setRevealedHint('');
 
-    // Create letter objects with non-overlapping positions
+    // Update progress based on words used
+    const totalWords = GAME_DATA[difficulty].length;
+    const wordsCompleted = GAME_DATA[difficulty].length - updatedAvailableWords.length;
+    setProgress((wordsCompleted / totalWords) * 100);
+
+    // Generate a fresh set of 15 letters that includes all word letters
     const wordLetters = wordData.word.split('');
-    const allLetters = generateLetterSet(wordLetters);
-
-    // Debug verification that all word letters are included
-    const wordSet = new Set(wordLetters.map(l => l.toUpperCase()));
-    const letterSet = new Set(allLetters.map(l => l.letter));
-    wordSet.forEach(letter => {
-      if (!letterSet.has(letter)) {
-        console.error(`Missing letter ${letter} from word ${wordData.word}`);
-      }
-    });
-
+    
     // Create blank spaces for the word
     const blankSpaces = wordLetters.map((letter, index) => ({
       id: `blank-${index}`,
@@ -257,18 +185,31 @@ const DSpellingGame = ({ onBackToHome }) => {
       filled: false,
       filledWithLetterId: null,
     }));
-
+    
     setBlanks(blankSpaces);
-    setLetters(allLetters);
+    
+    // IMPORTANT: We generate letters in a separate step to avoid state timing issues
     setTimeout(() => {
-      positionLetters();
-    }, 100);
-
-
-    // Update progress based on words used
-    const totalWords = GAME_DATA[difficulty].length;
-    const wordsCompleted = GAME_DATA[difficulty].length - updatedWords.length;
-    setProgress((wordsCompleted / totalWords) * 100);
+      // Generate fresh letter set with all required letters for the word
+      const freshLetters = generateLetterSet(wordLetters);
+      
+      // Set these letters with default positions (they'll be positioned later)
+      setLetters(freshLetters.map(letter => ({
+        ...letter,
+        hasBeenPositioned: false,
+        position: new Animated.ValueXY({ x: -100, y: -100 }),
+        originalPosition: { x: -100, y: -100 }
+      })));
+      
+      // Position the letters after they're set in state
+      setTimeout(() => {
+        if (letterPlaygroundLayout.width) {
+          positionLetters();
+        } else {
+          setTimeout(positionLetters, 300);
+        }
+      }, 100);
+    }, 50);
 
     // Speak the word
     if (!isMuted) {
@@ -278,143 +219,253 @@ const DSpellingGame = ({ onBackToHome }) => {
         rate: 0.75,
       });
     }
-  };
+  } else {
+    endGame();
+  }
+};
 
-  // Replace the entire generateLetterSet function (around line 282)
-  // Replace the entire generateLetterSet function (around line 292)
-  const generateLetterSet = (wordLetters) => {
+// Update setupGameWithWords with similar changes
+const setupGameWithWords = (words) => {
+  // Make sure we have words available
+  if (!words || words.length === 0) {
+    console.error("No words available for this difficulty!");
+    return;
+  }
+
+  // First, reset any existing letter state
+  setLetters([]);
+  setBlanks([]);
+  setDroppedLetters([]);
+  setRevealedHint('');
+  
+  // Set available words state for future reference
+  setAvailableWords(words);
+
+  // Randomly select a word from words parameter (not from state)
+  const randomIndex = Math.floor(Math.random() * words.length);
+  const wordData = words[randomIndex];
+
+  // Remove this word from words to prevent repetition
+  const updatedWords = [...words];
+  updatedWords.splice(randomIndex, 1);
+
+  // Update availableWords state with the remaining words
+  setAvailableWords(updatedWords);
+
+  // Set current word data
+  setCurrentWord(wordData.word);
+  setCurrentImage(wordData.image);
+  setCurrentHint(wordData.hint);
+
+  // Create blank spaces for the word
+  const wordLetters = wordData.word.split('');
+  const blankSpaces = wordLetters.map((letter, index) => ({
+    id: `blank-${index}`,
+    letter: letter,
+    filled: false,
+    filledWithLetterId: null,
+  }));
+  
+  setBlanks(blankSpaces);
+  
+  // Update progress based on words used
+  const totalWords = GAME_DATA[difficulty].length;
+  const wordsCompleted = GAME_DATA[difficulty].length - updatedWords.length;
+  setProgress((wordsCompleted / totalWords) * 100);
+  
+  // Generate letters in a separate step with timeout to ensure state consistency
+  setTimeout(() => {
+    // Generate fresh letter set with all required letters
+    const freshLetters = generateLetterSet(wordLetters);
+    
+    // Set letters with default positions
+    setLetters(freshLetters.map(letter => ({
+      ...letter,
+      hasBeenPositioned: false,
+      position: new Animated.ValueXY({ x: -100, y: -100 }),
+      originalPosition: { x: -100, y: -100 }
+    })));
+    
+    // Position letters after they're set in state
+    setTimeout(positionLetters, 100);
+  }, 50);
+
+  // Speak the word
+  if (!isMuted) {
+    Speech.speak(wordData.word, {
+      language: 'en',
+      pitch: 1.0,
+      rate: 0.75,
+    });
+  }
+};
+
+// Remove the duplicate positionLetters function and replace with a single implementation
+// Removed duplicate declaration of positionLetters
+
+// Fix the generateLetterSet function to add proper error handling and unique IDs
+const generateLetterSet = (wordLetters) => {
+  try {
+    console.log("Generating letter set for word:", wordLetters.join(''));
+    
     // Force uppercase for consistency
     const uppercaseWordLetters = wordLetters.map(letter => letter.toUpperCase());
-    console.log("Word to spell:", uppercaseWordLetters.join(''));
-
-    // Create required letter objects - one for EACH letter in the word
+    
+    // Create required letter objects - one for each letter in the word
     const wordLetterObjects = [];
-
-    // Important: Create each letter separately with unique IDs
+    
+    // Generate a unique timestamp for this generation to avoid ID collisions
+    const timestamp = Date.now();
+    
     uppercaseWordLetters.forEach((letter, index) => {
       wordLetterObjects.push({
-        id: `word-${index}`,
+        id: `word-${index}-${timestamp}-${Math.random().toString(36).substring(2, 6)}`,
         letter: letter,
         position: new Animated.ValueXY({ x: 0, y: 0 }),
         originalPosition: { x: 0, y: 0 },
         inDropZone: false,
         used: false,
+        isDragging: false,
       });
     });
-
-    console.log("Created letters for word:", wordLetterObjects.map(l => l.letter).join(''));
-
-    // Add some extra random letters 
+    
+    // Add extra random letters to reach exactly 15 letters total
     const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    const extraLetters = [];
-
-    // Always use exactly 15 letters total
-    const totalLetters = 15;
-    const extraLetterCount = Math.max(0, totalLetters - uppercaseWordLetters.length);
-
-    // Keep track of letter frequencies to balance distribution
+    const extraLetterCount = 15 - wordLetterObjects.length;
+    
+    // Track letter frequencies to avoid too many duplicates
     const letterCounts = {};
     uppercaseWordLetters.forEach(letter => {
       letterCounts[letter] = (letterCounts[letter] || 0) + 1;
     });
-
-    // Add extra letters with some randomness
+    
+    // Common letters that appear frequently in words
+    const commonLetters = 'ETAOINRSHDLUC';
+    
+    // Generate "near" letters to the word letters
+    const nearLetters = uppercaseWordLetters.flatMap(letter => {
+      const charCode = letter.charCodeAt(0);
+      const nearChars = [];
+      
+      // Get letters before and after in the alphabet
+      for (let offset = -2; offset <= 2; offset++) {
+        if (offset === 0) continue;
+        const newChar = String.fromCharCode(charCode + offset);
+        if (newChar >= 'A' && newChar <= 'Z') {
+          nearChars.push(newChar);
+        }
+      }
+      return nearChars;
+    });
+    
+    // Create extra letters
+    const extraLetters = [];
+    
     for (let i = 0; i < extraLetterCount; i++) {
       let randomLetter;
-
+      
       // 30% chance to duplicate a letter from the word
       if (Math.random() < 0.3 && uppercaseWordLetters.length > 0) {
-        // Get a random letter from the word
         randomLetter = uppercaseWordLetters[Math.floor(Math.random() * uppercaseWordLetters.length)];
-      } else {
-        // Get a random letter from the alphabet, excluding letters that appear too frequently
-        let availableLetters = alphabet.split('').filter(letter =>
-          !letterCounts[letter] || letterCounts[letter] < 3
-        );
-
-        // Fallback to full alphabet if we've filtered too aggressively
-        if (availableLetters.length < 5) {
-          availableLetters = alphabet.split('');
-        }
-
-        randomLetter = availableLetters[Math.floor(Math.random() * availableLetters.length)];
+      } 
+      // 40% chance to use a letter that's "near" the word letters
+      else if (Math.random() < 0.7 && nearLetters.length > 0) {
+        randomLetter = nearLetters[Math.floor(Math.random() * nearLetters.length)];
       }
-
+      // 20% chance to use a common letter
+      else if (Math.random() < 0.9) {
+        randomLetter = commonLetters[Math.floor(Math.random() * commonLetters.length)];
+      }
+      // 10% chance to use a completely random letter
+      else {
+        randomLetter = alphabet[Math.floor(Math.random() * alphabet.length)];
+      }
+      
+      // Limit duplicates to maximum 3 of each letter
+      const letterCount = letterCounts[randomLetter] || 0;
+      if (letterCount >= 3) {
+        const availableLetters = alphabet.split('').filter(l => !letterCounts[l] || letterCounts[l] < 2);
+        if (availableLetters.length > 0) {
+          randomLetter = availableLetters[Math.floor(Math.random() * availableLetters.length)];
+        }
+      }
+      
       // Update letter count
       letterCounts[randomLetter] = (letterCounts[randomLetter] || 0) + 1;
-
+      
+      // Create the extra letter object with unique ID
       extraLetters.push({
-        id: `extra-${i}`,
+        id: `extra-${i}-${timestamp}-${Math.random().toString(36).substring(2, 6)}`,
         letter: randomLetter,
         position: new Animated.ValueXY({ x: 0, y: 0 }),
         originalPosition: { x: 0, y: 0 },
         inDropZone: false,
         used: false,
+        isDragging: false,
       });
     }
-
-    // Combine word and extra letters
+    
+    // Combine and shuffle all letters
     const allLetters = [...wordLetterObjects, ...extraLetters];
+    const shuffledLetters = allLetters.sort(() => Math.random() - 0.5);
+    
+    console.log("Generated letter set:", shuffledLetters.map(l => l.letter).join(''));
+    
+    return shuffledLetters;
+  } catch (err) {
+    console.log("Error generating letter set:", err);
+    // Return a fallback set of letters in case of error
+    return fallbackLetterSet(wordLetters);
+  }
+};
 
-    // Debug: Check that all required letters are present
-    const letterSet = new Set(allLetters.map(l => l.letter));
-    uppercaseWordLetters.forEach(letter => {
-      if (!letterSet.has(letter)) {
-        console.error(`ERROR: Letter '${letter}' is missing from generated set!`);
-      }
+// Add a fallback letter generation function in case the main one fails
+const fallbackLetterSet = (wordLetters) => {
+  try {
+    const timestamp = Date.now();
+    const letters = [];
+    
+    // Add word letters
+    wordLetters.forEach((letter, index) => {
+      letters.push({
+        id: `fallback-word-${index}-${timestamp}`,
+        letter: letter.toUpperCase(),
+        position: new Animated.ValueXY({ x: 0, y: 0 }),
+        originalPosition: { x: 0, y: 0 },
+        inDropZone: false,
+        used: false,
+        isDragging: false,
+      });
     });
-
-    // Count required letters to ensure duplicates are handled correctly
-    const requiredLetterCount = {};
-    uppercaseWordLetters.forEach(letter => {
-      requiredLetterCount[letter] = (requiredLetterCount[letter] || 0) + 1;
-    });
-
-    // Count actual letters in the generated set
-    const actualLetterCount = {};
-    allLetters.forEach(letterObj => {
-      actualLetterCount[letterObj.letter] = (actualLetterCount[letterObj.letter] || 0) + 1;
-    });
-
-    // Make sure we have enough of each required letter
-    let needToAddLetters = false;
-    Object.keys(requiredLetterCount).forEach(letter => {
-      if (!actualLetterCount[letter] || actualLetterCount[letter] < requiredLetterCount[letter]) {
-        console.error(`ERROR: Not enough of letter '${letter}' - need ${requiredLetterCount[letter]}, have ${actualLetterCount[letter] || 0}`);
-        needToAddLetters = true;
-      }
-    });
-
-    // If we're missing any required letters, add them
-    if (needToAddLetters) {
-      Object.keys(requiredLetterCount).forEach(letter => {
-        const needed = requiredLetterCount[letter];
-        const have = actualLetterCount[letter] || 0;
-
-        // Add any missing letters
-        for (let i = have; i < needed; i++) {
-          allLetters.push({
-            id: `missing-${letter}-${i}`,
-            letter: letter,
-            position: new Animated.ValueXY({ x: 0, y: 0 }),
-            originalPosition: { x: 0, y: 0 },
-            inDropZone: false,
-            used: false,
-          });
-        }
+    
+    // Add some basic extra letters to reach 15
+    const extraNeeded = 15 - wordLetters.length;
+    const basicLetters = 'AEIOUBCDFGHLMNPRST';
+    
+    for (let i = 0; i < extraNeeded; i++) {
+      const randomIndex = Math.floor(Math.random() * basicLetters.length);
+      letters.push({
+        id: `fallback-extra-${i}-${timestamp}`,
+        letter: basicLetters[randomIndex],
+        position: new Animated.ValueXY({ x: 0, y: 0 }),
+        originalPosition: { x: 0, y: 0 },
+        inDropZone: false,
+        used: false,
+        isDragging: false,
       });
     }
-
-    console.log("Final letter set:", allLetters.map(l => l.letter).join(''));
-
-    // Shuffle and return
-    return allLetters.sort(() => Math.random() - 0.5);
-  };
+    
+    return letters.sort(() => Math.random() - 0.5);
+  } catch (err) {
+    console.log("Fallback letter generation failed:", err);
+    return [];
+  }
+};
 
   // New function to position letters once playground is measured
   // Replace the existing positionLetters function with this implementation
   const positionLetters = () => {
-    if (!letterPlaygroundLayout.width) return;
+    if (!letterPlaygroundLayout.width || letters.length === 0) return;
 
     // Define letter size
     const letterWidth = 40;
@@ -433,51 +484,64 @@ const DSpellingGame = ({ onBackToHome }) => {
     
     // For 15 letters, use 5 columns for optimal layout
     const maxColumns = 5;
-    const rows = Math.ceil(15 / maxColumns);
+    const rows = Math.ceil(letters.length / maxColumns);
     
-    // Calculate spacing between letters
+    // Calculate spacing between letters (no random jitter)
     const horizontalSpacing = usableWidth / maxColumns;
     const verticalSpacing = usableHeight / rows;
     
-    // Create updated letters array
+    // Create updated letters array with stable positions
     const updatedLetters = [];
     
+    // Check if positions have already been set (to prevent constant repositioning)
+    const needsPositioning = !letters[0].hasBeenPositioned;
+    
     letters.forEach((letter, index) => {
-      const col = index % maxColumns;
-      const row = Math.floor(index / maxColumns);
-      
-      // Calculate base position with better centering
-      const x = padding + (col * horizontalSpacing) + (horizontalSpacing/2 - letterWidth/2);
-      const y = padding + (row * verticalSpacing) + (verticalSpacing/2 - letterHeight/2);
-      
-      // Apply small random offset for natural appearance (optional)
-      const jitterRange = 8; // Reduced jitter for more uniform spacing
-      const jitterX = (Math.random() - 0.5) * jitterRange;
-      const jitterY = (Math.random() - 0.5) * jitterRange;
-      
-      // Apply position with boundary enforcement
-      const newPosition = { 
-        x: Math.max(padding, Math.min(containerWidth - padding - letterWidth, x + jitterX)),
-        y: Math.max(padding, Math.min(containerHeight - padding - letterHeight, y + jitterY))
-      };
-      
-      letter.position.setValue(newPosition);
-      
-      updatedLetters.push({
-        ...letter,
-        originalPosition: newPosition
-      });
+      // Only update positions if it's the initial positioning
+      if (needsPositioning) {
+        const col = index % maxColumns;
+        const row = Math.floor(index / maxColumns);
+        
+        // Calculate base position with precise centering (no random values)
+        const x = padding + (col * horizontalSpacing) + (horizontalSpacing/2 - letterWidth/2);
+        const y = padding + (row * verticalSpacing) + (verticalSpacing/2 - letterHeight/2);
+        
+        // Set position with no jitter for stability
+        const newPosition = { x, y };
+        letter.position.setValue(newPosition);
+        
+        updatedLetters.push({
+          ...letter,
+          originalPosition: newPosition,
+          hasBeenPositioned: true // Mark as positioned to prevent future repositioning
+        });
+      } else {
+        // If already positioned, just include letter as is (unless it's being dragged)
+        if (!letter.isDragging) {
+          updatedLetters.push(letter);
+        } else {
+          // For dragged letters, keep their current position
+          updatedLetters.push({
+            ...letter,
+            hasBeenPositioned: true
+          });
+        }
+      }
     });
     
-    setLetters(updatedLetters);
+    // Only update state if we needed positioning
+    if (needsPositioning) {
+      setLetters(updatedLetters);
+    }
   };
 
   // Call positionLetters whenever the letterPlaygroundLayout or letters change
   useEffect(() => {
     if (letterPlaygroundLayout.width && letters.length > 0) {
+      // Only position letters once when layout is ready or letters are changed
       positionLetters();
     }
-  }, [letterPlaygroundLayout, currentWordIndex]);
+  }, [letterPlaygroundLayout.width, letters.length]); // Only re-run if width or letter count changes
 
   // Create pan responders for each letter
   const createPanResponder = (letter) => {
@@ -531,7 +595,7 @@ const DSpellingGame = ({ onBackToHome }) => {
       onPanResponderRelease: (e, gesture) => {
         letter.position.flattenOffset();
 
-        // Remove the dragging state
+        // Remove the dragging state but preserve positioning status
         const updatedLetters = letters.map(l =>
           l.id === letter.id ? { ...l, isDragging: false } : l
         );
@@ -541,7 +605,7 @@ const DSpellingGame = ({ onBackToHome }) => {
         const droppedOnBlank = checkDropZone(letter, gesture);
 
         if (!droppedOnBlank) {
-          // Return to original position with animation
+          // Return to original position with animation, but keep hasBeenPositioned true
           Animated.spring(letter.position, {
             toValue: letter.originalPosition,
             friction: 5,
@@ -556,7 +620,9 @@ const DSpellingGame = ({ onBackToHome }) => {
     });
   };
 
-  const checkDropZone = (letter, gesture) => {
+  // Update the checkDropZone function to add error handling
+const checkDropZone = (letter, gesture) => {
+  try {
     // Use simplified approach with fixed area for dropping
     const dropAreaTop = 280;    // Reduced slightly to account for larger container
     const dropAreaBottom = 500; // Increased to account for larger container
@@ -623,7 +689,11 @@ const DSpellingGame = ({ onBackToHome }) => {
     }
 
     return false;
-  };
+  } catch (err) {
+    console.log("Error in checkDropZone:", err);
+    return false;
+  }
+};
 
   // Add new function to check if the answer is correct
   const checkAnswer = () => {
@@ -717,7 +787,9 @@ const DSpellingGame = ({ onBackToHome }) => {
     checkAnswer();
   };
 
-  const handleWordComplete = () => {
+  // Ensure we complete a word and move to the next one properly
+const handleWordComplete = () => {
+  try {
     playSound(SOUNDS.correct);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
@@ -732,14 +804,34 @@ const DSpellingGame = ({ onBackToHome }) => {
 
     // Wait a moment before moving to next word
     setTimeout(() => {
-      // No need to increment currentWordIndex, just setup next word
-      if (availableWords.length > 0) {
+      // Clear current state completely
+      setLetters([]);
+      setBlanks([]);
+      setDroppedLetters([]);
+      setRevealedHint('');
+      
+      // Setup next word after a delay to ensure clean state
+      setTimeout(() => {
+        if (availableWords && availableWords.length > 0) {
+          setupGame();
+        } else {
+          endGame();
+        }
+      }, 300);
+    }, 1500);
+  } catch (err) {
+    console.log("Error in handleWordComplete:", err);
+    
+    // Fallback to simply setting up the next word on error
+    setTimeout(() => {
+      if (availableWords && availableWords.length > 0) {
         setupGame();
       } else {
         endGame();
       }
-    }, 1500);
-  };
+    }, 1000);
+  }
+};
 
   const endGame = () => {
     setGameOver(true);
@@ -964,135 +1056,154 @@ const DSpellingGame = ({ onBackToHome }) => {
 
   // Game Screen
   const renderGameScreen = () => {
-    return (
-      <ImageBackground
-        source={require('./assets/images/space_background.png')}
-        style={styles.container}
-      >
-        {/* Header - same for all difficulties */}
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.iconButton} onPress={handleQuit}>
-            <MaterialIcons name="exit-to-app" size={24} color="white" />
-          </TouchableOpacity>
+    try {
+      return (
+        <ImageBackground
+          source={require('./assets/images/space_background.png')}
+          style={styles.container}
+        >
+          {/* Header - same for all difficulties */}
+          <View style={styles.header}>
+            <TouchableOpacity style={styles.iconButton} onPress={handleQuit}>
+              <MaterialIcons name="exit-to-app" size={24} color="white" />
+            </TouchableOpacity>
 
-          <View style={styles.scoreContainer}>
-            <Text style={styles.scoreText}>{score}</Text>
+            <View style={styles.scoreContainer}>
+              <Text style={styles.scoreText}>{score}</Text>
+            </View>
+
+            <TouchableOpacity style={styles.iconButton} onPress={toggleMute}>
+              <FontAwesome name={isMuted ? "volume-off" : "volume-up"} size={22} color="white" />
+            </TouchableOpacity>
           </View>
 
-          <TouchableOpacity style={styles.iconButton} onPress={toggleMute}>
-            <FontAwesome name={isMuted ? "volume-off" : "volume-up"} size={22} color="white" />
-          </TouchableOpacity>
-        </View>
-
-        {/* Progress Bar - same for all difficulties */}
-        <View style={styles.progressContainer}>
-          <View style={[styles.progressBar, { width: `${progress}%` }]} />
-        </View>
-
-        {/* Word Image - same container size for all difficulties */}
-        <View style={styles.imageContainer}>
-          <Image source={currentImage} style={styles.wordImage} resizeMode="contain" />
-        </View>
-
-        {/* Revealed Hint - same for all difficulties */}
-        {revealedHint ? (
-          <View style={styles.revealedHintContainer}>
-            <Text style={styles.revealedHintText}>{revealedHint}</Text>
+          {/* Progress Bar - same for all difficulties */}
+          <View style={styles.progressContainer}>
+            <View style={[styles.progressBar, { width: `${progress}%` }]} />
           </View>
-        ) : null}
 
-        {/* Letter Container - same size and layout for all difficulties */}
-        <View style={styles.letterContainerOuter}>
-          <View style={styles.letterContainerInner}>
-            {blanks.map((blank, index) => {
-              // Find the letter that fills this blank
-              const fillingLetter = blank.filled ?
-                letters.find(l => l.id === blank.filledWithLetterId) : null;
+          {/* Word Image - same container size for all difficulties */}
+          <View style={styles.imageContainer}>
+            <Image source={currentImage} style={styles.wordImage} resizeMode="contain" />
+          </View>
+
+          {/* Revealed Hint - same for all difficulties */}
+          {revealedHint ? (
+            <View style={styles.revealedHintContainer}>
+              <Text style={styles.revealedHintText}>{revealedHint}</Text>
+            </View>
+          ) : null}
+
+          {/* Letter Container - same size and layout for all difficulties */}
+          <View style={styles.letterContainerOuter}>
+            <View style={styles.letterContainerInner}>
+              {blanks.map((blank, index) => {
+                // Find the letter that fills this blank
+                const fillingLetter = blank.filled ?
+                  letters.find(l => l.id === blank.filledWithLetterId) : null;
+
+                return (
+                  <View
+                    key={blank.id}
+                    style={[
+                      styles.blankContainer,
+                      blank.filled ? styles.filledBlank : {}
+                    ]}
+                  >
+                    {blank.filled ? (
+                      <Text style={styles.blankFilledText}>
+                        {fillingLetter ? fillingLetter.letter : ''}
+                      </Text>
+                    ) : (
+                      <Text style={styles.blankText}>_</Text>
+                    )}
+                  </View>
+                );
+              })}
+            </View>
+          </View>
+
+          {/* Letter Playground - consistent size and layout for all difficulties */}
+          <View
+            style={styles.letterPlayground}
+            onLayout={(event) => {
+              const { x, y, width, height } = event.nativeEvent.layout;
+              setLetterPlaygroundLayout({ x, y, width, height });
+              // Position letters once layout is ready, with slight delay
+              if (letters.length > 0) {
+                setTimeout(positionLetters, 50);
+              }
+            }}
+          >
+            {/* Draggable Letters - same size and behavior for all difficulties */}
+            {letters.map((letter) => {
+              const panResponder = createPanResponder(letter);
 
               return (
-                <View
-                  key={blank.id}
+                <Animated.View
+                  key={letter.id}
                   style={[
-                    styles.blankContainer,
-                    blank.filled ? styles.filledBlank : {}
+                    styles.letter,
+                    { transform: letter.position.getTranslateTransform() },
+                    letter.used && styles.usedLetter,
+                    letter.isDragging && styles.draggingLetter // Apply special style when dragging
                   ]}
+                  {...panResponder.panHandlers}
                 >
-                  {blank.filled ? (
-                    <Text style={styles.blankFilledText}>
-                      {fillingLetter ? fillingLetter.letter : ''}
-                    </Text>
-                  ) : (
-                    <Text style={styles.blankText}>_</Text>
-                  )}
-                </View>
+                  <Text style={styles.letterText}>{letter.letter}</Text>
+                </Animated.View>
               );
             })}
           </View>
-        </View>
 
-        {/* Letter Playground - consistent size and layout for all difficulties */}
-        <View
-          style={styles.letterPlayground}
-          onLayout={(event) => {
-            const { x, y, width, height } = event.nativeEvent.layout;
-            setLetterPlaygroundLayout({ x, y, width, height });
-          }}
-        >
-          {/* Draggable Letters - same size and behavior for all difficulties */}
-          {letters.map((letter) => {
-            const panResponder = createPanResponder(letter);
-
-            return (
-              <Animated.View
-                key={letter.id}
-                style={[
-                  styles.letter,
-                  { transform: letter.position.getTranslateTransform() },
-                  letter.used && styles.usedLetter,
-                  letter.isDragging && styles.draggingLetter // Apply special style when dragging
-                ]}
-                {...panResponder.panHandlers}
-              >
-                <Text style={styles.letterText}>{letter.letter}</Text>
-              </Animated.View>
-            );
-          })}
-        </View>
-
-        {/* Game Controls - same for all difficulties */}
-        <View style={styles.gameControlsContainer}>
-          <TouchableOpacity
-            style={[styles.controlButton, styles.hintButton]}
-            onPress={handleHint}
-          >
-            <Text style={styles.controlButtonText}>Hint</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.controlButton, styles.resetButton]}
-            onPress={resetWord}
-          >
-            <Text style={styles.controlButtonText}>Reset</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.controlButton, styles.skipButton]}
-            onPress={handleSkipWord}
-          >
-            <Text style={styles.controlButtonText}>Skip</Text>
-          </TouchableOpacity>
-
-          {showSubmitButton && (
+          {/* Game Controls - same for all difficulties */}
+          <View style={styles.gameControlsContainer}>
             <TouchableOpacity
-              style={[styles.controlButton, styles.submitButton]}
-              onPress={handleSubmitWord}
+              style={[styles.controlButton, styles.hintButton]}
+              onPress={handleHint}
             >
-              <Text style={styles.controlButtonText}>Submit</Text>
+              <Text style={styles.controlButtonText}>Hint</Text>
             </TouchableOpacity>
-          )}
+
+            <TouchableOpacity
+              style={[styles.controlButton, styles.resetButton]}
+              onPress={resetWord}
+            >
+              <Text style={styles.controlButtonText}>Reset</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.controlButton, styles.skipButton]}
+              onPress={handleSkipWord}
+            >
+              <Text style={styles.controlButtonText}>Skip</Text>
+            </TouchableOpacity>
+
+            {showSubmitButton && (
+              <TouchableOpacity
+                style={[styles.controlButton, styles.submitButton]}
+                onPress={handleSubmitWord}
+              >
+                <Text style={styles.controlButtonText}>Submit</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </ImageBackground>
+      );
+    } catch (err) {
+      console.log("Error rendering game screen:", err);
+      return (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>Something went wrong</Text>
+          <TouchableOpacity 
+            style={styles.errorButton}
+            onPress={() => setGameState('difficulty')}
+          >
+            <Text style={styles.errorButtonText}>Go Back</Text>
+          </TouchableOpacity>
         </View>
-      </ImageBackground>
-    );
+      );
+    }
   };
 
   // Summary Screen
@@ -1615,6 +1726,30 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     overflow: 'visible', // Changed from 'hidden' to allow letters to be visible outside container
   },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+  },
+  errorText: {
+    color: 'white',
+    fontSize: 18,
+    marginBottom: 20,
+    fontFamily: 'OpenDyslexic',
+  },
+  errorButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    backgroundColor: 'rgba(76, 175, 80, 0.8)',
+    borderRadius: 25,
+  },
+  errorButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+    fontFamily: 'OpenDyslexic',
+  }
 });
 
 export default DSpellingGame;
