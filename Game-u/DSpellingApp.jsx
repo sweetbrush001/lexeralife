@@ -420,77 +420,56 @@ const DSpellingGame = ({ onBackToHome }) => {
     const letterWidth = 40;
     const letterHeight = 40;
 
-    // Define the playground boundaries
-    const playgroundWidth = letterPlaygroundLayout.width;
-    const playgroundHeight = letterPlaygroundLayout.height || 140;
+    // Add padding to ensure letters don't touch the container edges
+    const padding = 15;
     
-    // Calculate oval center point
-    const centerX = playgroundWidth / 2;
-    const centerY = playgroundHeight / 2;
+    // Get available space
+    const availableWidth = letterPlaygroundLayout.width - (padding * 2);
+    const availableHeight = letterPlaygroundLayout.height - (padding * 2);
     
-    // Calculate oval radius (slightly smaller than container to avoid edges)
-    const radiusX = (playgroundWidth / 2) - letterWidth;
-    const radiusY = (playgroundHeight / 2) - letterHeight;
-
+    // Calculate how many letters we can fit per row (with spacing between them)
+    const spacing = 20; // Space between letters
+    const effectiveLetterWidth = letterWidth + spacing;
+    const effectiveLetterHeight = letterHeight + spacing;
+    
+    // Use a grid approach - calculate number of columns based on container width
+    const columns = Math.floor(availableWidth / effectiveLetterWidth);
+    
+    // Ensure we have at least 3 columns or however many fit
+    const numColumns = Math.max(3, columns);
+    
+    // Place letters in a grid pattern with jitter
     const updatedLetters = [];
-    const occupiedSpaces = [];
-
-    // Function to check if position overlaps with existing letters
-    const isOverlapping = (x, y) => {
-      const minDistance = letterWidth + 5;
-      for (const space of occupiedSpaces) {
-        const dx = Math.abs(space.x - x);
-        const dy = Math.abs(space.y - y);
-        const distance = Math.sqrt(dx * dx + dy * dy);
-        if (distance < minDistance) {
-          return true; // Overlapping
-        }
-      }
-      return false;
-    };
-
-    // Position each letter with collision detection
-    for (const letter of letters) {
-      let x, y;
-      let attempts = 0;
-      const maxAttempts = 30;
-
-      do {
-        // Generate position within an oval shape
-        const angle = Math.random() * 2 * Math.PI;
-        const randomDistance = Math.random() * 0.8; // Use 0.8 to keep letters more toward center
-        
-        // Calculate position on the oval
-        x = centerX + radiusX * randomDistance * Math.cos(angle);
-        y = centerY + radiusY * randomDistance * Math.sin(angle);
-        
-        attempts++;
-
-        // Emergency exit if we can't find non-overlapping position
-        if (attempts > maxAttempts) {
-          // Generate a spiral pattern position as fallback
-          const spiralIndex = occupiedSpaces.length;
-          const spiralAngle = spiralIndex * 0.5;
-          const spiralRadius = 10 + (spiralIndex * 2);
-          x = centerX + Math.cos(spiralAngle) * spiralRadius;
-          y = centerY + Math.sin(spiralAngle) * spiralRadius;
-          break;
-        }
-      } while (isOverlapping(x, y));
-
-      // Save this position to check future overlaps
-      occupiedSpaces.push({ x, y });
-
-      // Set the new position
+    
+    // Create positions for each letter
+    letters.forEach((letter, index) => {
+      // Calculate grid position
+      const col = index % numColumns;
+      const row = Math.floor(index / numColumns);
+      
+      // Calculate base position
+      let baseX = padding + col * effectiveLetterWidth + effectiveLetterWidth/2;
+      let baseY = padding + row * effectiveLetterHeight + effectiveLetterHeight/2;
+      
+      // Add slight randomness to position (jitter) but not too much to avoid overlaps
+      const jitterAmount = spacing / 2; // Half the spacing for jitter
+      const jitterX = (Math.random() - 0.5) * jitterAmount;
+      const jitterY = (Math.random() - 0.5) * jitterAmount;
+      
+      // Final position with jitter
+      const x = baseX + jitterX;
+      const y = baseY + jitterY;
+      
+      // Set letter position
       const newPosition = { x, y };
       letter.position.setValue(newPosition);
-
+      
       updatedLetters.push({
         ...letter,
         originalPosition: newPosition
       });
-    }
-
+    });
+    
     setLetters(updatedLetters);
   };
 
@@ -1278,6 +1257,8 @@ const styles = StyleSheet.create({
     zIndex: 10,
     borderWidth: 2,
     borderColor: '#DDD5BE',
+    // Add tap highlight effect
+    touchAction: 'none',
   },
   usedLetter: {
     opacity: 0.8,
@@ -1609,7 +1590,7 @@ const styles = StyleSheet.create({
     borderRadius: 30, // More rounded for oval appearance
     padding: 10,
     marginTop: 15, // Position closer to blanks
-    minHeight: 150, // Height to create oval shape
+    minHeight: 180, // Increase height to allow for better letter spacing
     marginBottom: 80, // Space for control buttons
     position: 'relative',
     // Add border to visualize the oval container
