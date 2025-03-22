@@ -627,15 +627,11 @@ const fallbackLetterSet = (wordLetters) => {
 // Removed duplicate declaration of checkDropZone to avoid redeclaration error
 
 // Update the checkDropZone function with a more robust approach
+// Removed duplicate declaration of checkDropZone to avoid redeclaration error
+
+// Completely revise the checkDropZone function to allow filling blanks in any order
 const checkDropZone = (letter, gesture) => {
   try {
-    // Get the current position of the dragged letter
-    const letterX = gesture.moveX;
-    const letterY = gesture.moveY;
-    
-    console.log("Letter dropped at:", letterX, letterY);
-    console.log("Available blanks:", Object.keys(blankPositions).length);
-    
     // Find all empty blanks
     const emptyBlanks = blanks.filter(blank => !blank.filled);
     
@@ -644,92 +640,105 @@ const checkDropZone = (letter, gesture) => {
       return false;
     }
     
-    // Find the closest blank to the drop position
-    let closestBlank = null;
-    let shortestDistance = Infinity;
+    // Get drop position
+    const dropX = gesture.moveX;
+    const dropY = gesture.moveY;
     
-    for (const blank of emptyBlanks) {
-      const blankPos = blankPositions[blank.id];
-      
-      if (!blankPos) {
-        console.log(`No position data for blank ${blank.id}`);
-        continue;
-      }
-      
-      // Calculate distance from letter to blank center
-      // Using letterPlaygroundLayout as a reference point to convert to global coords
-      const blankCenterX = blankPos.globalX + (blankPos.width / 2);
-      const blankCenterY = blankPos.globalY + (blankPos.height / 2);
-      
-      const dx = letterX - blankCenterX;
-      const dy = letterY - blankCenterY;
-      const distance = Math.sqrt(dx*dx + dy*dy);
-      
-      console.log(`Blank ${blank.id}: distance=${distance}, pos=(${blankCenterX}, ${blankCenterY})`);
-      
-      if (distance < shortestDistance) {
-        shortestDistance = distance;
-        closestBlank = blank;
-      }
-    }
+    // Define the valid drop area (vertical range)
+    const screenHeight = Dimensions.get('window').height;
+    const dropAreaTop = 250;
+    const dropAreaBottom = screenHeight * 0.65;
     
-    // More forgiving distance check - using 300px to account for potential measurement issues
-    // We'll accept any drop that's reasonably close to a blank
-    if (closestBlank && shortestDistance < 300) {
-      console.log(`Dropping on blank ${closestBlank.id} with distance ${shortestDistance}`);
+    // Check if the drop is within vertical bounds of the blanks area
+    if (dropY >= dropAreaTop && dropY <= dropAreaBottom) {
+      console.log("Drop detected in valid vertical range");
       
-      // Update the blank state
-      const updatedBlanks = blanks.map(b => 
-        b.id === closestBlank.id ? 
-        { ...b, filled: true, filledWithLetterId: letter.id } : 
-        b
-      );
+      // Get reference to the blank container for coordinate estimation
+      const screenWidth = Dimensions.get('window').width;
+      const blankWidth = 35; // From our styles
+      const margin = 5; // From our styles
+      const totalBlanksWidth = blanks.length * (blankWidth + margin * 2);
+      const startX = (screenWidth - totalBlanksWidth) / 2;
       
-      // Add to dropped letters array
-      setDroppedLetters(prev => [
-        ...prev,
-        {
-          letterId: letter.id,
-          letter: letter.letter,
-          blankId: closestBlank.id
+      // Find the closest blank based on horizontal position
+      let targetBlankIndex = -1;
+      let closestDistance = Infinity;
+      
+      // Compare drop position to estimated position of each blank
+      emptyBlanks.forEach((blank) => {
+        // Get the index of this blank in the original blanks array
+        const blankIndex = blanks.findIndex(b => b.id === blank.id);
+        
+        // Calculate estimated center position of this blank
+        const blankCenterX = startX + (blankIndex * (blankWidth + margin * 2)) + (blankWidth / 2) + margin;
+        
+        // Calculate horizontal distance
+        const distance = Math.abs(dropX - blankCenterX);
+        
+        // If this is closer than current closest, update
+        if (distance < closestDistance) {
+          closestDistance = distance;
+          targetBlankIndex = blankIndex;
         }
-      ]);
+      });
       
-      // Update the letter state
-      const updatedLetters = letters.map(l => 
-        l.id === letter.id ? 
-        { ...l, used: true, inDropZone: true } : 
-        l
-      );
-      
-      // Return letter to its original position
-      Animated.spring(letter.position, {
-        toValue: letter.originalPosition,
-        friction: 5,
-        useNativeDriver: false
-      }).start();
-      
-      setBlanks(updatedBlanks);
-      setLetters(updatedLetters);
-      
-      // Play feedback
-      if (!isMuted) {
-        playSound(SOUNDS.drop);
+      // Make sure we found a valid blank
+      if (targetBlankIndex >= 0) {
+        const targetBlank = blanks[targetBlankIndex];
+        
+        // Update the blank state
+        const updatedBlanks = blanks.map(b => 
+          b.id === targetBlank.id ? 
+          { ...b, filled: true, filledWithLetterId: letter.id } : 
+          b
+        );
+        
+        // Add to dropped letters array
+        setDroppedLetters(prev => [
+          ...prev,
+          {
+            letterId: letter.id,
+            letter: letter.letter,
+            blankId: targetBlank.id
+          }
+        ]);
+        
+        // Update the letter state
+        const updatedLetters = letters.map(l => 
+          l.id === letter.id ? 
+          { ...l, used: true, inDropZone: true } : 
+          l
+        );
+        
+        // Return letter to its original position
+        Animated.spring(letter.position, {
+          toValue: letter.originalPosition,
+          friction: 5,
+          useNativeDriver: false
+        }).start();
+        
+        setBlanks(updatedBlanks);
+        setLetters(updatedLetters);
+        
+        // Play feedback
+        if (!isMuted) {
+          playSound(SOUNDS.drop);
+        }
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        
+        // Check if all blanks are filled
+        const allFilled = updatedBlanks.every(blank => blank.filled);
+        if (allFilled) {
+          setTimeout(() => {
+            checkAnswer();
+          }, 500);
+        }
+        
+        return true;
       }
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      
-      // Check if all blanks are filled
-      const allFilled = updatedBlanks.every(blank => blank.filled);
-      if (allFilled) {
-        setTimeout(() => {
-          checkAnswer();
-        }, 500);
-      }
-      
-      return true;
     }
     
-    console.log("No suitable blank found for dropping");
+    console.log("Drop outside of valid range or no close blank found");
     return false;
   } catch (err) {
     console.log("Error in checkDropZone:", err);
@@ -1153,18 +1162,16 @@ const handleWordComplete = () => {
                       blank.filled ? styles.filledBlank : {}
                     ]}
                     onLayout={(event) => {
-                      const { x, y, width, height } = event.nativeEvent.layout;
-                      // Update the position of this blank in our map
-                      event.target.measure((fx, fy, width, height, px, py) => {
+                      try {
+                        const { width, height } = event.nativeEvent.layout;
+                        // Only store dimensions - we don't need position for the simplified approach
                         setBlankPositions(prev => ({
                           ...prev,
-                          [blank.id]: { 
-                            x, y, width, height,  // Local coordinates
-                            globalX: px,          // Global X position on screen
-                            globalY: py           // Global Y position on screen
-                          }
+                          [blank.id]: { width, height }
                         }));
-                      });
+                      } catch (e) {
+                        console.log("Error in blank onLayout:", e);
+                      }
                     }}
                   >
                     {blank.filled ? (
